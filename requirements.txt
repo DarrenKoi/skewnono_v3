@@ -1,0 +1,6 @@
+Flask
+APScheduler
+redis
+python-dotenv
+pandas
+numpy
