@@ -1,10 +1,10 @@
 import logging
 import atexit
-import os
 from flask import Flask, request, redirect
 from flask_cors import CORS
 from config import Config
 from api.routes import api_bp
+from api.equipment_status import equipment_status_bp
 
 
 # Configure logging
@@ -23,10 +23,13 @@ def create_scheduler():
     and configure APScheduler or another scheduling library.
     """
     class MockScheduler:
-        def start(self):
+        @staticmethod
+        def start():
             logger.info("Mock scheduler started.")
-        def shutdown(self, wait=True):
+        @staticmethod
+        def shutdown(wait=True):
             logger.info("Mock scheduler shutdown.")
+            # Note: wait parameter included for API compatibility but not used in mock
     return MockScheduler()
 
 
@@ -46,6 +49,7 @@ def create_app():
 
     # Register blueprints
     app.register_blueprint(api_bp)
+    app.register_blueprint(equipment_status_bp, url_prefix='/api/equipment-status')
 
     @app.before_request
     def force_http():
@@ -76,11 +80,11 @@ def setup_scheduler(app):
 
         app.scheduler = scheduler
         logger.info("Scheduler initialized.")
+        return scheduler
     except Exception as e:
         logger.error(f"Failed to initialize scheduler: {e}")
         app.scheduler = None
-
-    return app.scheduler
+        return None
 
 
 # Create application instance for uWSGI

@@ -14,7 +14,7 @@ This is a Flask + Vue.js web application designed for a private cloud environmen
 pip install -r requirements.txt
 
 # Run Flask development server
-python app.py  # Runs on 0.0.0.0:5000
+python index.py  # Runs on 0.0.0.0:5000
 
 # Run with uWSGI (production)
 uwsgi --ini uwsgi.ini
@@ -47,8 +47,11 @@ npm run format
 ## Architecture
 
 ### Backend Structure
-- `app.py` - Flask application entry point (Note: `create_scheduler` function is missing and needs implementation)
-- `api/routes.py` - API endpoints blueprint mounted at `/api`
+- `index.py` - Flask application entry point (default name for private cloud deployment)
+- `api/routes.py` - General API endpoints blueprint mounted at `/api`
+- `api/equipment_status/` - Equipment status API module
+  - `__init__.py` - Blueprint definition
+  - `routes.py` - Equipment status endpoints
 - `config.py` - Environment configuration using python-dotenv
 - `utils/` - Utilities for Redis connection, logging, datetime conversion
 - `api/dummy/` - Contains dummy data and storage implementations for testing
@@ -101,10 +104,16 @@ npm run format
   ```
 
 ### API Endpoints
+
+#### General Endpoints (api/routes.py)
 - `GET /api/health` - Health check with Redis connectivity
 - `GET /api/jobs/status` - Scheduled jobs status
 - `GET /api/users` - Get users list (example)
 - `POST /api/users` - Create user (example)
+
+#### Equipment Status Endpoints (api/equipment_status/routes.py)
+- `GET /api/equipment-status/current-status` - Get current equipment status from sem_lists.py
+- `GET /api/equipment-status/storage` - Get equipment storage information from storage.py
 
 ## Important Configuration
 
@@ -162,6 +171,6 @@ Services export query options with appropriate cache configurations:
 - Query keys factory ensures consistent cache key generation
 
 ## Known Issues to Address
-1. Missing `create_scheduler` function in `app.py` - needs implementation
+1. Missing proper `create_scheduler` implementation in `index.py` (currently using mock)
 2. No test files or testing setup for either backend or frontend
 3. No .env example file to guide environment setup

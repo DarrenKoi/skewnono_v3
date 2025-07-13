@@ -1,5 +1,5 @@
 <template>
-  <div class="current-status bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
+  <div class="current-status bg-surface-50 dark:bg-surface-950 px-6 py-20 md:px-12 xl:px-20">
     <div class="flex flex-col items-start gap-4 mb-8">
       <Button 
         icon="pi pi-arrow-left" 
@@ -11,23 +11,25 @@
       />
       <div class="flex flex-col gap-2">
         <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">현재 장비 상태</div>
-        <div class="text-surface-500 dark:text-surface-300 text-lg">실시간 장비 상태 및 모니터링 정보</div>
+        <div class="text-surface-500 dark:text-surface-300 text-lg">
+          실시간 장비 상태 및 모니터링 정보
+          <span v-if="fabStore.currentFab" class="ml-2 font-medium text-primary">
+            (FAB: {{ fabStore.currentFab }})
+          </span>
+        </div>
       </div>
     </div>
 
     <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-semibold">장비 목록</h2>
-        <div class="flex items-center gap-2">
-          <Button 
-            icon="pi pi-refresh" 
-            label="새로고침" 
-            @click="refetch"
-            :loading="isRefetching"
-            size="small"
-          />
-          <Tag :value="`Total: ${filteredTableData.length}`" severity="secondary" />
-        </div>
+        <Button 
+          icon="pi pi-refresh" 
+          label="새로고침" 
+          @click="refetch"
+          :loading="isRefetching"
+          size="small"
+        />
       </div>
 
       <!-- Model Category Filter - First Layer -->
@@ -102,13 +104,17 @@
         class="text-sm"
       >
         <template #header>
-          <div class="flex flex-wrap gap-2 align-items-center justify-content-between">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-surface-500">
+              총 {{ filteredTableData?.length || 0 }}개 장비
+            </span>
             <span class="p-input-icon-left">
               <i class="pi pi-search" />
               <InputText 
                 v-model="globalFilterValue" 
                 placeholder="전체 검색" 
                 @input="onGlobalFilterChange"
+                class="w-64"
               />
             </span>
           </div>
@@ -152,12 +158,26 @@
 import { ref, computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { equipmentQueries } from '@/services/equipmentService'
+import { useFabStore } from '@/stores/fab'
+
+// FAB store
+const fabStore = useFabStore()
 
 // Fetch equipment data
 const { data, isLoading, isError, isRefetching, refetch } = useQuery(equipmentQueries.currentStatus())
 
-// Computed properties
-const tableData = computed(() => data.value?.data || [])
+// Computed properties - Filter by selected FAB first
+const tableData = computed(() => {
+  const rawData = data.value?.data || []
+  
+  // If no FAB is selected, show all data
+  if (!fabStore.currentFab) {
+    return rawData
+  }
+  
+  // Filter by selected FAB (fac_id matches selected FAB)
+  return rawData.filter(item => item.fac_id === fabStore.currentFab)
+})
 
 // Filter states
 const selectedCategory = ref(null)
@@ -285,9 +305,18 @@ const formatDate = (dateString) => {
 </script>
 
 <style scoped>
+:deep(.p-datatable) {
+  width: 100%;
+}
+
+:deep(.p-datatable-wrapper) {
+  width: 100%;
+}
+
 :deep(.p-datatable-header) {
   background-color: transparent;
   border: none;
+  padding: 1rem 1.5rem;
 }
 
 :deep(.p-datatable .p-datatable-thead > tr > th) {
@@ -295,9 +324,16 @@ const formatDate = (dateString) => {
   font-weight: 600;
 }
 
-:deep(.p-input-icon-left > svg) {
+:deep(.p-input-icon-left) {
+  position: relative;
+}
+
+:deep(.p-input-icon-left > .pi) {
+  position: absolute;
+  left: 0.75rem;
   top: 50%;
-  margin-top: -0.5rem;
+  transform: translateY(-50%);
+  color: var(--p-text-color-secondary);
 }
 
 :deep(.p-input-icon-left > .p-inputtext) {
