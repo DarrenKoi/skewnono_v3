@@ -1,4 +1,5 @@
 Flask
+Flask-CORS
 APScheduler
 redis
 python-dotenv

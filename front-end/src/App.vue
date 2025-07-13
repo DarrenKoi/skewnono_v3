@@ -1,22 +1,27 @@
 <template>
-  <div class="flex flex-col gap-12">
-    <div class="flex gap-6 flex-wrap">
-      <div
-        class="rounded-border p-4 border border-transparent flex items-center justify-center bg-primary hover:bg-primary-emphasis text-primary-contrast font-medium flex-auto transition-colors">
-        primary</div>
-      <div
-        class="rounded-border p-4 border border-transparent flex items-center justify-center bg-highlight hover:bg-highlight-emphasis font-medium flex-auto transition-colors">
-        highlight</div>
-      <div
-        class="rounded-border p-4 border border-surface flex items-center justify-center text-muted-color hover:text-color hover:bg-emphasis font-medium flex-auto transition-colors">
-        box</div>
-    </div>
-  </div>
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- Toast for notifications -->
+    <Toast position="top-right" />
+    
+    <!-- Header -->
+    <HeaderView />
 
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 min-w-[1500px] min-h-[1100px] text-sm">
+      <router-view />
+    </main>
+
+    <!-- Footer -->
+    <FooterView />
+  </div>
 </template>
 
 <script setup>
-
+import HeaderView from '@/layout/HeaderView.vue'
+import FooterView from '@/layout/FooterView.vue'
+import Toast from 'primevue/toast'
 </script>
 
-<style lang="scss" scoped></style>
+<style>
+/* Global app styles if needed */
+</style>

@@ -1,4 +1,4 @@
-fac_id,eqp_id,eqp_model_cd,eqp_grp_id,vendor_nm,ip_address,fab_name,updt_dt,available,version
+fac_id,eqp_id,eqp_model_cd,eqp_grp_id,vendor_nm,eqp_ip,fab_name,updt_dt,available,version
 R4,ECXDX328,CG6380,G-MCD-R4-04,HITACHI,177.152.109.9,R4A,2025-07-05 21:09:37.156474,On,1
 M18,ECDX325,TP4500,G-MDS-M18-19,HITACHI,197.208.223.2,M18A,2025-06-18 21:09:37.156474,On,2
 M14,ECXDX194,TP3000,G-MDS-M14-04,HITACHI,197.217.89.155,M14B,2025-06-05 21:09:37.156474,On,3

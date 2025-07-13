@@ -1,0 +1,167 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a Flask + Vue.js web application designed for a private cloud environment with specific resource constraints (2 CPU, 8GB RAM). The backend uses Flask with Redis for caching, and the frontend is a Vue 3 SPA with Vite as the build tool.
+
+## Commands
+
+### Backend Development
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run Flask development server
+python app.py  # Runs on 0.0.0.0:5000
+
+# Run with uWSGI (production)
+uwsgi --ini uwsgi.ini
+```
+
+### Frontend Development
+```bash
+# Navigate to frontend directory first
+cd front-end/
+
+# Install dependencies
+npm install
+
+# Development server with hot reload
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Lint code
+npm run lint
+
+# Format code with Prettier
+npm run format
+```
+
+## Architecture
+
+### Backend Structure
+- `app.py` - Flask application entry point (Note: `create_scheduler` function is missing and needs implementation)
+- `api/routes.py` - API endpoints blueprint mounted at `/api`
+- `config.py` - Environment configuration using python-dotenv
+- `utils/` - Utilities for Redis connection, logging, datetime conversion
+- `api/dummy/` - Contains dummy data and storage implementations for testing
+  - `sem_lists.py` - Generates dummy SEM equipment data with columns:
+    - `fac_id`: Facility ID
+    - `eqp_id`: Equipment ID
+    - `eqp_model_cd`: Equipment model code
+    - `eqp_grp_id`: Equipment group ID
+    - `vendor_nm`: Vendor name
+    - `eqp_ip`: Equipment IP address
+    - `fab_name`: Fab name
+    - `updt_dt`: Update datetime
+    - `available`: Availability status (On/Off)
+    - `version`: Version number
+
+### Frontend Structure
+- Vue 3 with Composition API
+- `src/main.js` - Application entry point with PrimeVue and Tailwind CSS setup
+- `src/router/` - Vue Router configuration with lazy-loaded routes
+- `src/stores/` - Pinia state management
+- `src/views/` - Page components
+
+### Frontend Styling Configuration
+
+#### PrimeVue v4 Setup
+- Theme: Aura preset from `@primevue/themes`
+- CSS Layer configuration for proper styling precedence:
+  ```javascript
+  theme: {
+    preset: Aura,
+    options: {
+      cssLayer: {
+        name: 'primevue',
+        order: 'theme, base, primevue',
+      },
+    },
+  }
+  ```
+- Auto-import components via `unplugin-vue-components` resolver
+
+#### Tailwind CSS v4 Integration
+- Uses `@tailwindcss/vite` plugin (no PostCSS or config files needed)
+- Imported via `@import 'tailwindcss'` in main.css
+- `tailwindcss-primeui` package for PrimeVue-specific Tailwind utilities
+- CSS imports in `src/assets/styles/main.css`:
+  ```css
+  @import 'tailwindcss';
+  @import 'tailwindcss-primeui';
+  @import 'primeicons/primeicons.css';
+  ```
+
+### API Endpoints
+- `GET /api/health` - Health check with Redis connectivity
+- `GET /api/jobs/status` - Scheduled jobs status
+- `GET /api/users` - Get users list (example)
+- `POST /api/users` - Create user (example)
+
+## Important Configuration
+
+### Environment Variables
+The application uses environment variables loaded from `.env` file. Key configurations:
+- Redis connection settings
+- Flask application settings
+- Scheduler timezone (Asia/Seoul)
+
+### uWSGI Configuration
+- 2 processes with 2 threads each
+- Memory limits: 256MB RSS reload, 512MB limit
+- Logs to `/var/log/uwsgi/app.log`
+- Lazy apps mode for scheduler (runs only in first worker)
+
+### Development Environment Notes
+- This codebase is designed to work in a company's private cloud environment
+- Redis and Elasticsearch (v7) are available in the company environment but may not be available locally
+- The code runs in WSL environment, Windows-specific tools/installations won't work
+- When testing locally, Redis connectivity may fail but the app should still run
+
+## Frontend Dependencies
+Key packages for the PrimeVue + Tailwind CSS v4 setup:
+- `@primevue/themes` - Theme presets (using Aura)
+- `primevue` - Core component library
+- `@tailwindcss/vite` - Tailwind CSS v4 Vite plugin
+- `tailwindcss-primeui` - Integration utilities for PrimeVue components
+- `unplugin-vue-components` - Auto-import for PrimeVue components
+- `@tanstack/vue-query` - Data fetching and caching library
+- `axios` - HTTP client for API requests
+
+## Data Fetching with Vue Query
+
+### Configuration
+The application uses TanStack Vue Query for efficient data fetching and caching, configured to match server data refresh periods:
+
+- **Cache times**: 30 minutes, 4 hours, 8 hours, 24 hours
+- **Query client configuration**: `src/config/queryClient.js`
+- **Default stale time**: 5 minutes
+- **Default cache time**: 30 minutes
+
+### Usage Pattern
+```javascript
+// Import query options
+import { equipmentQueries } from '@/services/equipmentService'
+
+// In component
+const { data, isLoading, isError } = useQuery(equipmentQueries.status())
+```
+
+### Service Structure
+Services export query options with appropriate cache configurations:
+- `healthQueries` - API health checks (5 min cache)
+- `equipmentQueries` - Equipment data (30 min - 24 hour cache)
+- Query keys factory ensures consistent cache key generation
+
+## Known Issues to Address
+1. Missing `create_scheduler` function in `app.py` - needs implementation
+2. No test files or testing setup for either backend or frontend
+3. No .env example file to guide environment setup
