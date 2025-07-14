@@ -50,12 +50,87 @@ npm run format
 - `index.py` - Flask application entry point (default name for private cloud deployment)
 - `api/routes.py` - General API endpoints blueprint mounted at `/api`
 - `api/equipment_status/` - Equipment status API module
-  - `__init__.py` - Blueprint definition
-  - `routes.py` - Equipment status endpoints
-- `config.py` - Environment configuration using python-dotenv
-- `utils/` - Utilities for Redis connection, logging, datetime conversion
-- `api/dummy/` - Contains dummy data and storage implementations for testing
-  - `sem_lists.py` - Generates dummy SEM equipment data with columns:
+  - `routes.py` - Equipment status endpoints with environment-aware data loading
+  - `dummy/` - Dummy data for home development environment
+  - `real/` - Real data sources for work/production environment
+- `config.py` - Environment configuration using python-dotenv with DATA_SOURCE_MODE detection
+- `utils/` - Utilities for Redis connection, logging, datetime conversion, and data loading
+  - `data_loader.py` - Environment-aware data loading based on platform.node()
+
+### Environment-Aware Data Loading
+
+The application automatically selects data sources based on the environment:
+
+#### Environment Detection (via `platform.node()`)
+- **Home Development**: Node names starting with "DESKTOP" → uses dummy data
+- **Work Development**: Node names starting with "PC" → uses real data  
+- **Production**: Node names containing "skewnono" → uses real data
+- **Override**: Set `DATA_SOURCE_MODE=dummy` or `DATA_SOURCE_MODE=real` environment variable
+
+#### API Module Structure
+Each API module follows this pattern:
+```
+api/module_name/
+├── routes.py           # API endpoints using DataLoader
+├── dummy/             # Dummy data for development
+│   ├── data_file1.py
+│   └── data_file2.py
+└── real/              # Real data for production
+    ├── data_file1.py
+    └── data_file2.py
+```
+
+#### Usage in Routes
+Environment detection and data imports are handled at the top of each routes.py file:
+
+```python
+import platform
+import os
+
+# Environment detection
+def get_data_source():
+    env_override = os.environ.get('DATA_SOURCE_MODE')
+    if env_override in ['dummy', 'real']:
+        return env_override
+    
+    node_name = platform.node().upper()
+    if node_name.startswith('DESKTOP'):
+        return 'dummy'  # Home environment
+    elif node_name.startswith('PC') or 'SKEWNONO' in node_name:
+        return 'real'   # Work/production environment
+    else:
+        return 'dummy'  # Default
+
+# Import appropriate data modules based on environment
+data_source = get_data_source()
+if data_source == 'real':
+    from .real import sem_lists, storage
+else:
+    from .dummy import sem_lists, storage
+
+# Use in route handlers
+def get_equipment_status():
+    df = sem_lists.df  # Direct access to imported module
+    return jsonify(df.to_dict('records'))
+```
+
+#### Supported Data Attributes
+Data modules can export data using these standard attributes:
+- `data` - Generic data attribute
+- `df` - DataFrame attribute
+- `json_data` - JSON data attribute
+- `dict_data` - Dictionary data attribute
+- `list_data` - List data attribute
+
+#### Creating New API Modules
+1. Create new directory `api/your_module/`
+2. Create `routes.py` with blueprint and environment detection
+3. Create `dummy/` folder with data generators for development
+4. Create `real/` folder with actual data fetchers for production
+5. Register blueprint in `index.py`
+
+### Equipment Status Data Structure
+The `sem_lists.py` module generates dummy SEM equipment data with columns:
     - `fac_id`: Facility ID
     - `eqp_id`: Equipment ID
     - `eqp_model_cd`: Equipment model code

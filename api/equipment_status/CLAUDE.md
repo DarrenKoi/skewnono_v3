@@ -1,12 +1,69 @@
-# CLAUDE.md - API Dummy Data Module
+# CLAUDE.md - Equipment Status API Module
 
-This module provides dummy data generation for CD-SEM (Critical Dimension Scanning Electron Microscope) equipment testing and development.
+This module provides environment-aware data loading for CD-SEM (Critical Dimension Scanning Electron Microscope) equipment status and storage information.
 
 ## Module Structure
 
-- `sem_lists.py` - Generates dummy CD-SEM equipment data
-- `storage.py` - Storage implementations for dummy data
-- `sample_data/cd_sem_dummy_data.csv` - Sample CSV data file
+```
+api/equipment_status/
+├── routes.py              # Flask routes with environment detection
+├── dummy/                 # Dummy data for home development
+│   ├── sem_lists.py      # Generates dummy CD-SEM equipment data
+│   ├── storage.py        # Generates dummy storage data
+│   └── not_available.py  # Generates data for equipment with issues
+└── real/                  # Real data sources for work/production
+    ├── sem_lists.py      # Real equipment data (placeholder)
+    └── storage.py        # Real storage data (placeholder)
+```
+
+## Environment-Aware Data Loading
+
+The module automatically detects the environment and loads appropriate data sources:
+
+### Environment Detection
+Based on `platform.node()`:
+- **Home Development**: Node names starting with "DESKTOP" → uses `dummy/` data
+- **Work Development**: Node names starting with "PC" → uses `real/` data  
+- **Production**: Node names containing "SKEWNONO" → uses `real/` data
+- **Unknown**: Defaults to `dummy/` data
+
+### Implementation in routes.py
+```python
+import platform
+
+def get_data_source():
+    """Determine data source based on platform node name"""
+    node_name = platform.node().upper()
+    if node_name.startswith('DESKTOP'):
+        return 'dummy'  # Home environment
+    elif node_name.startswith('PC') or 'SKEWNONO' in node_name:
+        return 'real'   # Work/production environment
+    else:
+        return 'dummy'  # Default to dummy for unknown environments
+
+# Import appropriate data modules based on environment
+data_source = get_data_source()
+if data_source == 'real':
+    from .real import sem_lists, storage
+    # TODO: Add not_available module for real environment
+else:
+    from .dummy import sem_lists, storage, not_available
+```
+
+### API Endpoints
+- `GET /api/equipment-status/current-status` - Equipment status information
+- `GET /api/equipment-status/storage` - Equipment storage metrics
+- `GET /api/equipment-status/not_available` - Equipment with data access issues (dummy environment only)
+
+### Usage in Route Handlers
+```python
+@equipment_status_bp.route('/current-status', methods=['GET'])
+def get_equipment_status():
+    # Direct access to imported data module
+    df = sem_lists.df
+    equipment_data = df.to_dict('records')
+    return jsonify({'status': 'success', 'data': equipment_data})
+```
 
 ## CD-SEM Equipment Data Structure
 
@@ -68,18 +125,6 @@ The dummy data represents CD-SEM equipment with the following structure:
 #### version (int64)
 - **Description**: Equipment software/firmware version
 - **Values**: 1, 2, 3
-
-## Usage
-
-```python
-from api.dummy.sem_lists import generate_equipment_data, df
-
-# Use the default dataset
-equipment_df = df
-
-# Generate a custom dataset
-custom_df = generate_equipment_data(n_rows=500)
-```
 
 ## Data Consistency Rules
 
@@ -182,14 +227,64 @@ The storage module provides dummy data for CD-SEM equipment storage metrics and 
 - IP addresses are in private ranges suitable for internal network deployment
 - Recipe counts may update at different intervals than storage metrics (see timestamp difference)
 
-### Storage Usage
+## Not Available Equipment Data (not_available.py)
 
-```python
-from api.dummy.storage import generate_storage_data, df
+The `not_available.py` module provides dummy data for equipment with various data access issues, designed for development and testing purposes.
 
-# Use the default storage dataset
-storage_df = df
+### Module Functions
 
-# Generate a custom storage dataset
-custom_storage_df = generate_storage_data(n_rows=500)
+#### not_available_for_now()
+- **Purpose**: Returns equipment data where `available` status is "Off"
+- **Data Source**: Filters `sem_lists.df` for equipment with `available="Off"`
+- **Return Type**: List of dictionaries containing equipment data
+- **Update Frequency**: 30 minutes (matches equipment status checks)
+
+#### version_not_available()
+- **Purpose**: Returns equipment data where version information is missing
+- **Data Source**: Modifies `sem_lists.df` to set 10% of equipment to empty version strings
+- **Processing**: Randomly selects equipment and sets `version=""` 
+- **Return Type**: List of dictionaries containing equipment data with empty versions
+- **Update Frequency**: 24 hours
+
+#### storage_not_available()
+- **Purpose**: Returns storage data where storage fields are empty
+- **Data Source**: Modifies `storage.df` to set 15% of storage entries to empty storage fields
+- **Processing**: Randomly selects equipment and sets storage fields (`total`, `used`, `avail`, `percent`) to empty strings
+- **Return Type**: List of dictionaries containing storage data with empty storage fields
+- **Update Frequency**: 24 hours
+
+### API Endpoint Response Format
+
+The `/api/equipment-status/not_available` endpoint returns:
+
+```json
+{
+  "status": "success",
+  "data": {
+    "equipment_off": [...],      // Equipment with available="Off"
+    "version_empty": [...],      // Equipment with empty version
+    "storage_empty": [...]       // Equipment with empty storage fields
+  },
+  "counts": {
+    "equipment_off": 30,         // Count of off equipment
+    "version_empty": 30,         // Count of equipment with empty version
+    "storage_empty": 45          // Count of equipment with empty storage
+  }
+}
 ```
+
+### Frontend Integration
+
+The frontend `NotAvailableView.vue` displays this data with:
+- **Category Selection**: Three buttons for switching between data types
+- **Model Filtering**: Dropdown to filter by equipment model
+- **Data Tables**: Responsive tables with appropriate columns for each category
+- **Update Timing Information**: Display of refresh frequencies for each data type
+
+### Data Consistency Notes
+
+1. **Equipment OFF**: Uses actual equipment data from `sem_lists.df`
+2. **Version Empty**: Creates modified copy of equipment data with selective empty versions
+3. **Storage Empty**: Creates modified copy of storage data with selective empty storage fields
+4. **Reproducibility**: Uses fixed random seeds for consistent dummy data generation
+5. **Development Only**: Currently only available in dummy environment (not production)

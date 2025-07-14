@@ -8,7 +8,7 @@ from datetime import datetime
 from functools import wraps
 
 
-class LogManager:
+class LoggerManager:
     """
     A comprehensive logging manager built on top of loguru.
 
@@ -19,13 +19,13 @@ class LogManager:
         >>> old_stdout = sys.stdout
         >>> sys.stdout = StringIO()
         >>>
-        >>> log_manager = LogManager(mode="dev")
+        >>> log_manager = LoggerManager(mode="dev")
         >>> log = log_manager.get_logger()
         >>> # Restore stdout
         >>> sys.stdout = old_stdout
 
     With custom configuration:
-        >>> log_manager = LogManager(
+        >>> log_manager = LoggerManager(
         ...     log_file_path="logs/app.log",
         ...     level="INFO",
         ...     console_level="WARNING",

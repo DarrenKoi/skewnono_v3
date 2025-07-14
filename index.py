@@ -4,7 +4,7 @@ from flask import Flask, request, redirect
 from flask_cors import CORS
 from config import Config
 from api.routes import api_bp
-from api.equipment_status import equipment_status_bp
+from api.equipment_status.routes import equipment_status_bp
 
 
 # Configure logging

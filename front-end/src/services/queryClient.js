@@ -27,19 +27,3 @@ export const queryClient = new QueryClient({
     },
   },
 })
-
-// Query key factory for consistent key generation
-export const queryKeys = {
-  all: ['api'],
-  health: () => [...queryKeys.all, 'health'],
-  jobs: () => [...queryKeys.all, 'jobs'],
-  jobsStatus: () => [...queryKeys.jobs(), 'status'],
-  users: () => [...queryKeys.all, 'users'],
-  user: (id) => [...queryKeys.users(), id],
-  equipment: () => [...queryKeys.all, 'equipment'],
-  equipmentStatus: () => [...queryKeys.equipment(), 'status'],
-  recipes: () => [...queryKeys.all, 'recipes'],
-  recipe: (id) => [...queryKeys.recipes(), id],
-  deviceStats: () => [...queryKeys.all, 'device-stats'],
-  failIssues: () => [...queryKeys.all, 'fail-issues'],
-}

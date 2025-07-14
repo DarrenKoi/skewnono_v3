@@ -1,17 +1,35 @@
-from flask import jsonify
-from . import equipment_status_bp
+from flask import Blueprint, jsonify
+import platform
+
+# Create blueprint
+equipment_status_bp = Blueprint('equipment_status', __name__, url_prefix='/equipment-status')
+
+# Environment detection - determine which data source to use
+def get_data_source():
+    """Determine data source based on platform node name"""
+    node_name = platform.node().upper()
+    if node_name.startswith('DESKTOP'):
+        return 'dummy'  # Home environment
+    elif node_name.startswith('PC') or 'SKEWNONO' in node_name:
+        return 'real'   # Work/production environment
+    else:
+        return 'dummy'  # Default to dummy for unknown environments
+
+# Import appropriate data modules based on environment
+data_source = get_data_source()
+if data_source == 'real':
+    from .real import sem_lists, storage
+    # TODO: Add not_available module for real environment
+else:
+    from .dummy import sem_lists, storage, not_available
 
 
 @equipment_status_bp.route('/current-status', methods=['GET'])
 def get_equipment_status():
-    """Get current equipment status from sem_lists.py"""
+    """Get current equipment status using environment-aware data loading"""
     try:
-        # Import the dataframe from sem_lists.py
-        import sys
-        import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from api.dummy.sem_lists import df
-        print(df.head(5))
+        # Use the imported data module based on environment
+        df = sem_lists.df
         # Convert dataframe to dictionary format for JSON response
         equipment_data = df.to_dict('records')
         
@@ -34,14 +52,10 @@ def get_equipment_status():
 
 @equipment_status_bp.route('/storage', methods=['GET'])
 def get_equipment_storage():
-    """Get equipment storage information from storage.py"""
+    """Get equipment storage information using environment-aware data loading"""
     try:
-        # Import the dataframe from storage.py
-        import sys
-        import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from api.dummy.storage import df
-        print(df.head(5))
+        # Use the imported data module based on environment
+        df = storage.df
         # Convert dataframe to dictionary format for JSON response
         storage_data = df.to_dict('records')
         
@@ -63,6 +77,42 @@ def get_equipment_storage():
             'status': 'success',
             'data': storage_data,
             'total': len(storage_data)
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@equipment_status_bp.route('/not_available', methods=['GET'])
+def get_not_available_equipment():
+    """Get equipment that is not available (Off status, empty version, or empty storage)"""
+    try:
+        # Only available in dummy environment for now
+        if data_source != 'dummy':
+            return jsonify({
+                'status': 'error',
+                'message': 'Not available endpoint only supported in development environment'
+            }), 501
+        
+        # Get data from the three not_available functions
+        off_equipment = not_available.not_available_for_now()
+        empty_version_equipment = not_available.version_not_available()
+        empty_storage_equipment = not_available.storage_not_available()
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'equipment_off': off_equipment,
+                'version_empty': empty_version_equipment,
+                'storage_empty': empty_storage_equipment
+            },
+            'counts': {
+                'equipment_off': len(off_equipment),
+                'version_empty': len(empty_version_equipment),
+                'storage_empty': len(empty_storage_equipment)
+            }
         })
     except Exception as e:
         return jsonify({

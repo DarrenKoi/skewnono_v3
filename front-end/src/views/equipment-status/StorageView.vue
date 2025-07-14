@@ -167,26 +167,11 @@ import { equipmentQueries } from '@/services/equipmentService'
 import { FilterMatchMode } from '@primevue/core/api'
 import { useFabStore } from '@/stores/fab'
 
-// Add storage query to equipment service
-const storageQuery = () => ({
-  queryKey: ['equipment', 'storage'],
-  queryFn: async () => {
-    const response = await fetch('/api/equipment-status/storage')
-    if (!response.ok) {
-      throw new Error('Failed to fetch storage data')
-    }
-    const result = await response.json()
-    return result.data
-  },
-  staleTime: 1000 * 60 * 5, // 5 minutes
-  cacheTime: 1000 * 60 * 10, // 10 minutes
-})
-
 // FAB store
 const fabStore = useFabStore()
 
 // Fetch storage data using React Query
-const { data: rawStorageData, isLoading, isError, refetch } = useQuery(storageQuery())
+const { data: rawStorageData, isLoading, isError, refetch } = useQuery(equipmentQueries.storage())
 
 // Filter state
 const selectedEquipmentType = ref(null)
@@ -212,7 +197,7 @@ const getModelCategory = (modelCode) => {
 
 // Get base filtered data (FAB + CD-SEM/HV-SEM only)
 const baseFilteredData = computed(() => {
-  const rawData = rawStorageData.value || []
+  const rawData = rawStorageData.value?.data || []
   
   let filteredData = rawData
   

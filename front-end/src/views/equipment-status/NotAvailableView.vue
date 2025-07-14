@@ -10,58 +10,184 @@
         @click="$router.push({ name: 'equipment-status' })" 
       />
       <div class="flex flex-col gap-2">
-        <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Skewnono 미지원 장비</div>
-        <div class="text-surface-500 dark:text-surface-300 text-lg">Skewnono 시스템에서 지원하지 않는 장비 정보</div>
+        <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Data 확인 불가 현황</div>
+        <div class="text-surface-500 dark:text-surface-300 text-lg">스큐노노가 접근 불가능한 장비 리스트</div>
       </div>
     </div>
 
-    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <h2 class="text-2xl font-semibold mb-6">Skewnono 미지원 장비</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <template #title>레거시 장비 D</template>
-          <template #content>
-            <div class="flex items-center gap-2 mb-2">
-              <Badge value="미지원" severity="secondary" />
-              <span class="text-sm text-surface-600">수동 관리 필요</span>
-            </div>
-            <p class="text-sm">담당자: 홍길동</p>
-            <p class="text-sm">연락처: ext.1234</p>
-          </template>
-        </Card>
+    <!-- Loading state -->
+    <div v-if="isLoading" class="flex justify-center items-center py-12">
+      <ProgressSpinner />
+    </div>
+
+    <!-- Error state -->
+    <div v-else-if="isError" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+      <Message severity="error" :closable="false">
+        데이터를 불러오는 중 오류가 발생했습니다.
+      </Message>
+    </div>
+
+    <!-- Main content -->
+    <div v-else class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+      <!-- Category selection buttons -->
+      <div class="flex flex-col gap-4 mb-6">
+        <h2 class="text-xl font-semibold">Data 확인 불가 분류</h2>
+        <div class="flex flex-wrap gap-3">
+          <Button 
+            :label="`장비 OFF (${notAvailableData?.counts?.equipment_off || 0})`"
+            :severity="selectedCategory === 'equipment_off' ? 'primary' : 'secondary'"
+            :outlined="selectedCategory !== 'equipment_off'"
+            @click="selectedCategory = 'equipment_off'"
+          />
+          <Button 
+            :label="`버전 없음 (${notAvailableData?.counts?.version_empty || 0})`"
+            :severity="selectedCategory === 'version_empty' ? 'primary' : 'secondary'"
+            :outlined="selectedCategory !== 'version_empty'"
+            @click="selectedCategory = 'version_empty'"
+          />
+          <Button 
+            :label="`스토리지 없음 (${notAvailableData?.counts?.storage_empty || 0})`"
+            :severity="selectedCategory === 'storage_empty' ? 'primary' : 'secondary'"
+            :outlined="selectedCategory !== 'storage_empty'"
+            @click="selectedCategory = 'storage_empty'"
+          />
+        </div>
         
-        <Card>
-          <template #title>외부 장비 E</template>
-          <template #content>
-            <div class="flex items-center gap-2 mb-2">
-              <Badge value="외부관리" severity="secondary" />
-              <span class="text-sm text-surface-600">제3자 관리</span>
+        <!-- Refresh timing info -->
+        <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
+          <div class="flex items-start gap-3">
+            <i class="pi pi-clock text-surface-600 mt-1"></i>
+            <div>
+              <h4 class="font-medium text-surface-900 dark:text-surface-0 mb-2">업데이트 주기</h4>
+              <ul class="text-sm text-surface-600 dark:text-surface-300 space-y-1">
+                <li>• 장비 OFF 상태: 30분마다 확인</li>
+                <li>• 버전 정보: 24시간마다 확인</li>
+                <li>• 스토리지 정보: 24시간마다 확인</li>
+              </ul>
             </div>
-            <p class="text-sm">관리업체: ABC Tech</p>
-            <p class="text-sm">연락처: 02-1234-5678</p>
-          </template>
-        </Card>
-      </div>
-      
-      <div class="mt-6 p-4 bg-surface-100 dark:bg-surface-800 rounded-lg">
-        <div class="flex items-start gap-3">
-          <i class="pi pi-info-circle text-surface-600 mt-1"></i>
-          <div>
-            <h4 class="font-medium text-surface-900 dark:text-surface-0">안내사항</h4>
-            <p class="text-sm text-surface-600 dark:text-surface-300 mt-1">
-              이 장비들은 Skewnono 시스템에서 직접 제어할 수 없습니다. 
-              각 담당자 또는 관리업체에 직접 연락하여 상태를 확인하세요.
-            </p>
           </div>
         </div>
+      </div>
+
+      <!-- Model filter -->
+      <div class="flex flex-col gap-4 mb-6">
+        <h3 class="text-lg font-medium">모델 필터</h3>
+        <div class="flex gap-4">
+          <Dropdown 
+            v-model="selectedModel" 
+            :options="availableModels" 
+            optionLabel="label"
+            optionValue="value"
+            placeholder="모델 선택"
+            class="w-64"
+            showClear
+          />
+        </div>
+      </div>
+
+      <!-- Data display -->
+      <div class="mt-6">
+        <h3 class="text-lg font-medium mb-4">{{ getCategoryTitle() }}</h3>
+        <DataTable 
+          :value="filteredData" 
+          :paginator="true" 
+          :rows="10" 
+          :loading="isLoading"
+          responsiveLayout="scroll"
+          class="p-datatable-sm"
+        >
+          <Column field="eqp_id" header="장비 ID" sortable />
+          <Column field="eqp_model_cd" header="모델" sortable />
+          <Column field="vendor_nm" header="벤더" sortable />
+          <Column field="fac_id" header="시설 ID" sortable />
+          <Column field="fab_name" header="FAB 이름" sortable />
+          <Column field="eqp_ip" header="IP 주소" sortable />
+          <Column v-if="selectedCategory === 'equipment_off' || selectedCategory === 'storage_empty'" field="available" header="상태">
+            <template #body="slotProps">
+              <Badge 
+                :value="selectedCategory === 'equipment_off' ? slotProps.data.available : '스토리지 없음'" 
+                :severity="selectedCategory === 'equipment_off' ? (slotProps.data.available === 'Off' ? 'danger' : 'success') : 'warning'"
+              />
+            </template>
+          </Column>
+          <Column v-if="selectedCategory === 'version_empty'" field="version" header="버전">
+            <template #body="slotProps">
+              <span v-if="slotProps.data.version === ''">
+                <Badge value="버전 없음" severity="warning" />
+              </span>
+              <span v-else>{{ slotProps.data.version }}</span>
+            </template>
+          </Column>
+        </DataTable>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-// This component will handle not available equipment data from Flask API
-// API endpoint: /api/equipment/not_available
+import { ref, computed, onMounted } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { equipmentQueries } from '@/services/equipmentService'
+
+// Reactive state
+const selectedCategory = ref('equipment_off')
+const selectedModel = ref(null)
+
+// Fetch not available equipment data
+const { data: notAvailableData, isLoading, isError } = useQuery(equipmentQueries.notAvailable())
+
+// Computed properties
+const currentCategoryData = computed(() => {
+  if (!notAvailableData.value?.data) return []
+  return notAvailableData.value.data[selectedCategory.value] || []
+})
+
+const availableModels = computed(() => {
+  if (!currentCategoryData.value || currentCategoryData.value.length === 0) return []
+  
+  const models = [...new Set(currentCategoryData.value.map(item => item.eqp_model_cd))]
+  return [
+    { label: '모든 모델', value: null },
+    ...models.map(model => ({ label: model, value: model }))
+  ]
+})
+
+const filteredData = computed(() => {
+  if (!currentCategoryData.value) return []
+  
+  let filtered = [...currentCategoryData.value]
+  
+  if (selectedModel.value) {
+    filtered = filtered.filter(item => item.eqp_model_cd === selectedModel.value)
+  }
+  
+  return filtered
+})
+
+// Methods
+const getCategoryTitle = () => {
+  switch (selectedCategory.value) {
+    case 'equipment_off':
+      return '장비 OFF 상태'
+    case 'version_empty':
+      return '버전 정보 없음'
+    case 'storage_empty':
+      return '스토리지 정보 없음'
+    default:
+      return '장비 정보'
+  }
+}
+
+// Reset model filter when category changes
+const resetModelFilter = () => {
+  selectedModel.value = null
+}
+
+// Watch for category changes
+import { watch } from 'vue'
+watch(selectedCategory, () => {
+  resetModelFilter()
+})
 </script>
 
 <style scoped>
