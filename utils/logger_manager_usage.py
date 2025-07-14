@@ -12,7 +12,7 @@ import asyncio
 import time
 from contextlib import contextmanager
 import requests
-from logger_manager import LogManager, LogConfigs
+from logger_manager import LoggerManager, LogConfigs
 
 
 # =============================================================================
@@ -21,7 +21,7 @@ from logger_manager import LogManager, LogConfigs
 
 def basic_logging_example():
     """Example 1: Basic logging with different levels"""
-    log_manager = LogManager(mode="dev")
+    log_manager = LoggerManager(mode="dev")
     log = log_manager.get_logger()
 
     # Different log levels
@@ -43,7 +43,7 @@ def basic_logging_example():
 
 def structured_logging_example():
     """Example 2: Adding structured context to logs"""
-    log_manager = LogManager(
+    log_manager = LoggerManager(
         mode="prod",
         json_format=True,  # Enable JSON format for structured logging
         log_file_path="logs/structured.log"
@@ -79,7 +79,7 @@ def web_app_logging_example():
     """Example 3: Logging in web applications with request tracking"""
     from uuid import uuid4
 
-    log_manager = LogManager(
+    log_manager = LoggerManager(
         log_name="web_app",
         mode="prod",
         json_format=True,
@@ -132,7 +132,7 @@ def web_app_logging_example():
 
 async def async_logging_example():
     """Example 4: Logging in async applications"""
-    log_manager = LogManager(
+    log_manager = LoggerManager(
         log_name="async_app",
         mode="dev",
         enable_print_redirect=True
@@ -168,7 +168,7 @@ async def async_logging_example():
 
 def performance_monitoring_example():
     """Example 5: Using performance decorators and monitoring"""
-    log_manager = LogManager(mode="dev")
+    log_manager = LoggerManager(mode="dev")
     log = log_manager.get_logger()
 
     # Using the performance decorator
@@ -211,7 +211,7 @@ def performance_monitoring_example():
 
 def error_handling_example():
     """Example 6: Comprehensive error handling and logging"""
-    log_manager = LogManager(
+    log_manager = LoggerManager(
         mode="dev",
         enable_exception_logging=True,
         backtrace=True,
@@ -322,7 +322,7 @@ def multi_handler_example():
             print(f"[EMAIL ALERT] Critical error: {record['message']}")
 
     # Create logger with multiple handlers
-    log_manager = LogManager(
+    log_manager = LoggerManager(
         mode="prod",
         log_file_path="logs/app.log",
         console_level="INFO",
@@ -368,7 +368,7 @@ class DatabaseService:
 
     def __init__(self, connection_string: str):
         self.connection_string = connection_string
-        self.log_manager = LogManager(
+        self.log_manager = LoggerManager(
             log_name="database_service",
             log_file_path="logs/database.log",
             mode="prod"
@@ -431,7 +431,7 @@ def testing_with_logging_example():
 
         def __init__(self):
             self.log_capture = io.StringIO()
-            self.log_manager = LogManager(
+            self.log_manager = LoggerManager(
                 mode="test",
                 level="DEBUG",
                 extra_handlers=[{
@@ -485,7 +485,7 @@ def production_best_practices():
     @contextmanager
     def production_logger(service_name: str):
         """Context manager for production logging"""
-        log_manager = LogManager(
+        log_manager = LoggerManager(
             log_name=service_name,
             log_file_path=f"logs/{service_name}/{service_name}.log",
             mode="prod",
@@ -594,7 +594,7 @@ def custom_format_example():
     )
 
     # Example: Development logger
-    dev_logger = LogManager(
+    dev_logger = LoggerManager(
         mode="dev",
         custom_format=dev_format
     )
@@ -603,7 +603,7 @@ def custom_format_example():
     dev_logger.cleanup()
 
     # Example: Audit logger
-    audit_logger = LogManager(
+    audit_logger = LoggerManager(
         log_name="audit",
         log_file_path="logs/audit.log",
         custom_format=audit_format,
