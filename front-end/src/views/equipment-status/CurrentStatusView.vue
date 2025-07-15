@@ -23,13 +23,29 @@
     <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-semibold">장비 목록</h2>
-        <Button 
-          icon="pi pi-refresh" 
-          label="새로고침" 
-          @click="refetch"
-          :loading="isRefetching"
-          size="small"
-        />
+      </div>
+
+      <!-- FAB Filter -->
+      <div class="mb-4">
+        <div class="text-lg font-semibold mb-3">FAB 선택</div>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            label="전체"
+            :severity="selectedFab === null ? 'primary' : 'secondary'"
+            :outlined="selectedFab !== null"
+            size="small"
+            @click="selectFab(null)"
+          />
+          <Button
+            v-for="fab in availableFabs"
+            :key="fab.name"
+            :label="`${fab.name} (${fab.count})`"
+            :severity="selectedFab === fab.name ? 'primary' : 'secondary'"
+            :outlined="selectedFab !== fab.name"
+            size="small"
+            @click="selectFab(fab.name)"
+          />
+        </div>
       </div>
 
       <!-- Model Category Filter - First Layer -->
@@ -95,7 +111,7 @@
         :paginator="true" 
         :rows="10"
         :rowsPerPageOptions="[5, 10, 20, 50]"
-        :loading="isRefetching"
+        :loading="isLoading"
         stripedRows
         showGridlines
         size="small"
@@ -143,12 +159,6 @@
         </Column>
 
         <Column field="version" header="버전" sortable :style="{ width: '80px' }" />
-
-        <Column field="updt_dt" header="업데이트 시간" sortable :style="{ width: '180px' }">
-          <template #body="{ data }">
-            {{ formatDate(data.updt_dt) }}
-          </template>
-        </Column>
       </DataTable>
     </div>
   </div>
@@ -164,22 +174,49 @@ import { useFabStore } from '@/stores/fab'
 const fabStore = useFabStore()
 
 // Fetch equipment data
-const { data, isLoading, isError, isRefetching, refetch } = useQuery(equipmentQueries.currentStatus())
+const { data, isLoading, isError } = useQuery(equipmentQueries.currentStatus())
 
-// Computed properties - Filter by selected FAB first
+// Get all available FABs from raw data filtered by current fac_id
+const availableFabs = computed(() => {
+  const rawData = data.value?.data || []
+  const fabs = {}
+  
+  // First filter by fac_id from navbar store
+  const filteredData = fabStore.currentFab 
+    ? rawData.filter(item => item.fac_id === fabStore.currentFab)
+    : rawData
+  
+  filteredData.forEach(item => {
+    if (item.fab_name) {
+      if (!fabs[item.fab_name]) {
+        fabs[item.fab_name] = { name: item.fab_name, count: 0 }
+      }
+      fabs[item.fab_name].count++
+    }
+  })
+  
+  return Object.values(fabs).sort((a, b) => a.name.localeCompare(b.name))
+})
+
+// Computed properties - Filter by fac_id first, then by fab_name
 const tableData = computed(() => {
   const rawData = data.value?.data || []
   
-  // If no FAB is selected, show all data
-  if (!fabStore.currentFab) {
-    return rawData
+  // First filter by fac_id from navbar store
+  let filteredData = fabStore.currentFab 
+    ? rawData.filter(item => item.fac_id === fabStore.currentFab)
+    : rawData
+  
+  // Then filter by selected fab_name if any
+  if (selectedFab.value) {
+    filteredData = filteredData.filter(item => item.fab_name === selectedFab.value)
   }
   
-  // Filter by selected FAB (fac_id matches selected FAB)
-  return rawData.filter(item => item.fac_id === fabStore.currentFab)
+  return filteredData
 })
 
 // Filter states
+const selectedFab = ref(null)
 const selectedCategory = ref(null)
 const selectedModel = ref(null)
 const globalFilterValue = ref('')
@@ -270,6 +307,12 @@ const filteredTableData = computed(() => {
 })
 
 // Selection methods
+const selectFab = (fab) => {
+  selectedFab.value = fab
+  selectedCategory.value = null // Reset category when FAB changes
+  selectedModel.value = null // Reset model when FAB changes
+}
+
 const selectCategory = (category) => {
   selectedCategory.value = category
   selectedModel.value = null // Reset model selection when category changes
@@ -281,6 +324,19 @@ const selectModel = (model) => {
 
 // Watch for category changes to reset model selection
 watch(selectedCategory, () => {
+  selectedModel.value = null
+})
+
+// Watch for FAB changes to reset selections
+watch(selectedFab, () => {
+  selectedCategory.value = null
+  selectedModel.value = null
+})
+
+// Watch for store FAB changes to reset selections
+watch(() => fabStore.currentFab, () => {
+  selectedFab.value = null
+  selectedCategory.value = null
   selectedModel.value = null
 })
 

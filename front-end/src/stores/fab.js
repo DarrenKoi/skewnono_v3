@@ -1,14 +1,23 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { fabQueries } from '@/services/fabService'
 
 export const useFabStore = defineStore('fab', () => {
   // State
   const selectedFab = ref('')
-  const fabList = ref(['R3', 'M16', 'M14', 'M15', 'M11', 'M10'])
+  
+  // Fetch fab list from API
+  const { data: fabListData, isLoading: fabListLoading } = useQuery(fabQueries.list())
+  
+  // Computed fab list - fallback to empty object if not loaded
+  const fabListDict = computed(() => fabListData.value || {})
+  const fabList = computed(() => Object.keys(fabListDict.value).sort().reverse())
 
   // Getters
   const hasFabSelection = computed(() => selectedFab.value !== '')
   const currentFab = computed(() => selectedFab.value)
+  const currentFabNames = computed(() => fabListDict.value[selectedFab.value] || [])
 
   // Actions
   const initializeFabSelection = () => {
@@ -25,26 +34,6 @@ export const useFabStore = defineStore('fab', () => {
     }
   }
 
-  const clearFabSelection = () => {
-    selectedFab.value = ''
-    localStorage.removeItem('selectedFab')
-  }
-
-  const addFab = (fab) => {
-    if (fab && !fabList.value.includes(fab)) {
-      fabList.value.push(fab)
-    }
-  }
-
-  const removeFab = (fab) => {
-    const index = fabList.value.indexOf(fab)
-    if (index > -1) {
-      fabList.value.splice(index, 1)
-      if (selectedFab.value === fab) {
-        clearFabSelection()
-      }
-    }
-  }
 
   // Initialize on store creation
   initializeFabSelection()
@@ -53,14 +42,14 @@ export const useFabStore = defineStore('fab', () => {
     // State
     selectedFab,
     fabList,
+    fabListDict,
+    fabListLoading,
     // Getters
     hasFabSelection,
     currentFab,
+    currentFabNames,
     // Actions
     setSelectedFab,
-    clearFabSelection,
-    initializeFabSelection,
-    addFab,
-    removeFab
+    initializeFabSelection
   }
 })

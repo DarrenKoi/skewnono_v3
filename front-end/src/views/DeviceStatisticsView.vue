@@ -2,240 +2,310 @@
   <div class="device-statistics bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
     <div class="flex flex-col items-start gap-2 mb-8">
       <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">디바이스 통계</div>
-      <div class="text-surface-500 dark:text-surface-300 text-lg">디바이스 상태 및 통계 정보를 확인하세요</div>
+      <div class="text-surface-500 dark:text-surface-300 text-lg">
+        {{ facId }} 시설의 디바이스 상태 및 통계 정보를 확인하세요
+      </div>
     </div>
     
-    <!-- Selection Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-      <div
-        v-for="(option, index) in statisticsOptions"
-        :key="index"
-        class="shadow-sm rounded-2xl p-4 cursor-pointer bg-surface-0 dark:bg-surface-900 border transition-all duration-200"
-        :class="{
-          'border-transparent': selected !== index,
-          'border-primary shadow-md': selected === index
-        }"
-        @click="selected = index"
-      >
-        <div class="flex items-center justify-center mb-4">
-          <i :class="option.icon" class="text-4xl text-primary"></i>
-        </div>
-        <div class="p-2 flex flex-col items-center gap-3">
-          <div class="flex flex-col gap-2 w-full">
-            <div class="text-surface-900 dark:text-surface-0 text-lg font-semibold text-center">{{ option.title }}</div>
-            <div class="text-surface-500 dark:text-surface-300 text-sm leading-normal text-center" v-html="option.description" />
+    <!-- R3 Facility - Multiple Selection -->
+    <div v-if="facId === 'R3'" class="mb-8">
+      <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
+        <h3 class="text-xl font-semibold mb-4">디바이스 카테고리 선택</h3>
+        <div class="flex flex-wrap gap-3">
+          <div
+            v-for="option in r3Options"
+            :key="option"
+            class="flex items-center p-3 border rounded-lg cursor-pointer transition-all duration-200"
+            :class="{
+              'border-primary bg-primary-50 dark:bg-primary-900/20': selectedR3Options.includes(option),
+              'border-surface-300 dark:border-surface-600': !selectedR3Options.includes(option)
+            }"
+            @click="toggleR3Option(option)"
+          >
+            <Checkbox 
+              v-model="selectedR3Options" 
+              :value="option" 
+              class="mr-2"
+            />
+            <label class="text-surface-900 dark:text-surface-0 cursor-pointer">{{ option }}</label>
           </div>
-          <div class="flex gap-2">
-            <span v-for="(tag, tagIndex) in option.tags" :key="tagIndex" class="bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs rounded-lg">
-              {{ tag }}
-            </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Non-R3 Facility - Single Selection -->
+    <div v-else class="mb-8">
+      <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
+        <h3 class="text-xl font-semibold mb-4">디바이스 선택</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div
+            v-for="device in deviceOptions"
+            :key="device"
+            class="p-3 border rounded-lg cursor-pointer transition-all duration-200"
+            :class="{
+              'border-primary bg-primary-50 dark:bg-primary-900/20': selectedDevice === device,
+              'border-surface-300 dark:border-surface-600': selectedDevice !== device
+            }"
+            @click="selectedDevice = device"
+          >
+            <div class="flex items-center">
+              <RadioButton 
+                v-model="selectedDevice" 
+                :value="device" 
+                class="mr-2"
+              />
+              <label class="text-surface-900 dark:text-surface-0 cursor-pointer">{{ device }}</label>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Content Display -->
-    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <!-- Current Status Content -->
-      <div v-if="selected === 0" class="current-status-content">
-        <h2 class="text-2xl font-semibold mb-6">현재 디바이스 상황</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-6 text-center">
-            <i class="pi pi-check-circle text-4xl text-green-500 mb-3"></i>
-            <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">{{ currentStatus.active }}</div>
-            <div class="text-surface-600 dark:text-surface-300">활성 디바이스</div>
-          </div>
-          <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-6 text-center">
-            <i class="pi pi-pause-circle text-4xl text-yellow-500 mb-3"></i>
-            <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">{{ currentStatus.inactive }}</div>
-            <div class="text-surface-600 dark:text-surface-300">비활성 디바이스</div>
-          </div>
-          <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-6 text-center">
-            <i class="pi pi-exclamation-circle text-4xl text-red-500 mb-3"></i>
-            <div class="text-2xl font-bold text-surface-900 dark:text-surface-0">{{ currentStatus.error }}</div>
-            <div class="text-surface-600 dark:text-surface-300">오류 상태</div>
-          </div>
-        </div>
-        
-        <!-- Device List -->
-        <div class="mt-6">
-          <h3 class="text-lg font-semibold mb-4">디바이스 목록</h3>
-          <DataTable :value="deviceList" stripedRows>
-            <Column field="name" header="디바이스명"></Column>
-            <Column field="type" header="타입"></Column>
-            <Column field="status" header="상태">
-              <template #body="{ data }">
-                <Badge 
-                  :value="data.status" 
-                  :severity="getStatusSeverity(data.status)"
-                />
-              </template>
-            </Column>
-            <Column field="lastActive" header="마지막 활동"></Column>
-            <Column field="temperature" header="온도">
-              <template #body="{ data }">
-                {{ data.temperature }}°C
-              </template>
-            </Column>
-          </DataTable>
-        </div>
+    <div v-if="hasValidSelection" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">
+          {{ facId === 'R3' ? `선택된 카테고리: ${selectedR3Options.join(', ')}` : `선택된 디바이스: ${selectedDevice}` }}
+        </h2>
+        <Button @click="fetchDeviceData" :loading="loading" label="데이터 새로고침" icon="pi pi-refresh" />
       </div>
 
-      <!-- Weekly Statistics Content -->
-      <div v-if="selected === 1" class="weekly-stats-content">
-        <h2 class="text-2xl font-semibold mb-6">주간 통계</h2>
-        
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <template #content>
-              <div class="flex flex-col items-center">
-                <div class="text-3xl font-bold text-primary">{{ weeklyStats.totalDevices }}</div>
-                <div class="text-sm text-surface-600 dark:text-surface-300">전체 디바이스</div>
-              </div>
-            </template>
-          </Card>
-          <Card>
-            <template #content>
-              <div class="flex flex-col items-center">
-                <div class="text-3xl font-bold text-green-500">{{ weeklyStats.avgUptime }}%</div>
-                <div class="text-sm text-surface-600 dark:text-surface-300">평균 가동률</div>
-              </div>
-            </template>
-          </Card>
-          <Card>
-            <template #content>
-              <div class="flex flex-col items-center">
-                <div class="text-3xl font-bold text-yellow-500">{{ weeklyStats.totalWarnings }}</div>
-                <div class="text-sm text-surface-600 dark:text-surface-300">경고 발생</div>
-              </div>
-            </template>
-          </Card>
-          <Card>
-            <template #content>
-              <div class="flex flex-col items-center">
-                <div class="text-3xl font-bold text-red-500">{{ weeklyStats.totalErrors }}</div>
-                <div class="text-sm text-surface-600 dark:text-surface-300">오류 발생</div>
-              </div>
-            </template>
-          </Card>
-        </div>
+      <!-- Statistics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" v-if="statisticsData">
+        <Card>
+          <template #content>
+            <div class="flex flex-col items-center">
+              <div class="text-3xl font-bold text-primary">{{ statisticsData.totalCount || 0 }}</div>
+              <div class="text-sm text-surface-600 dark:text-surface-300">전체 항목</div>
+            </div>
+          </template>
+        </Card>
+        <Card>
+          <template #content>
+            <div class="flex flex-col items-center">
+              <div class="text-3xl font-bold text-green-500">{{ statisticsData.activeCount || 0 }}</div>
+              <div class="text-sm text-surface-600 dark:text-surface-300">활성 항목</div>
+            </div>
+          </template>
+        </Card>
+        <Card>
+          <template #content>
+            <div class="flex flex-col items-center">
+              <div class="text-3xl font-bold text-yellow-500">{{ statisticsData.warningCount || 0 }}</div>
+              <div class="text-sm text-surface-600 dark:text-surface-300">경고</div>
+            </div>
+          </template>
+        </Card>
+        <Card>
+          <template #content>
+            <div class="flex flex-col items-center">
+              <div class="text-3xl font-bold text-red-500">{{ statisticsData.errorCount || 0 }}</div>
+              <div class="text-sm text-surface-600 dark:text-surface-300">오류</div>
+            </div>
+          </template>
+        </Card>
+      </div>
 
-        <!-- Chart Placeholder -->
-        <div class="bg-surface-50 dark:bg-surface-800 rounded-lg p-8">
-          <div class="text-center">
-            <i class="pi pi-chart-line text-6xl text-surface-400 mb-4"></i>
-            <p class="text-surface-600 dark:text-surface-300">주간 추이 차트가 여기에 표시됩니다</p>
-            <p class="text-sm text-surface-500 dark:text-surface-400 mt-2">Chart.js 또는 PrimeVue Chart 컴포넌트로 구현 예정</p>
-          </div>
-        </div>
+      <!-- Data Table -->
+      <div v-if="statisticsData && statisticsData.data" class="mt-6">
+        <h3 class="text-lg font-semibold mb-4">상세 데이터</h3>
+        <DataTable :value="statisticsData.data" stripedRows paginator :rows="10">
+          <Column field="prod_id" header="제품 ID"></Column>
+          <Column field="oper_id" header="작업 ID"></Column>
+          <Column field="oper_desc" header="작업 설명"></Column>
+          <Column field="eqp_id" header="장비 ID"></Column>
+          <Column field="para_all" header="전체 파라미터">
+            <template #body="{ data }">
+              <Badge :value="data.para_all" severity="info" />
+            </template>
+          </Column>
+          <Column field="skip_yn" header="스킵 여부">
+            <template #body="{ data }">
+              <Badge 
+                :value="data.skip_yn" 
+                :severity="data.skip_yn === 'Yes' ? 'warning' : 'success'"
+              />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+
+      <!-- No Data State -->
+      <div v-else-if="!loading" class="text-center py-12">
+        <i class="pi pi-inbox text-6xl text-surface-400 mb-4"></i>
+        <p class="text-surface-600 dark:text-surface-300">선택된 항목에 대한 데이터가 없습니다</p>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="text-center py-12">
+        <ProgressSpinner />
+        <p class="mt-4 text-surface-600 dark:text-surface-300">데이터를 불러오는 중...</p>
+      </div>
+    </div>
+
+    <!-- No Selection State -->
+    <div v-else class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+      <div class="text-center py-12">
+        <i class="pi pi-info-circle text-6xl text-surface-400 mb-4"></i>
+        <p class="text-surface-600 dark:text-surface-300">
+          {{ facId === 'R3' ? '카테고리를 선택해주세요' : '디바이스를 선택해주세요' }}
+        </p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Badge from 'primevue/badge'
 import Card from 'primevue/card'
+import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
+import RadioButton from 'primevue/radiobutton'
+import ProgressSpinner from 'primevue/progressspinner'
+import axios from 'axios'
 
-const selected = ref(0)
+const route = useRoute()
 
-const statisticsOptions = [
-  {
-    title: '현재 상황',
-    description: '실시간 디바이스<br>상태 확인',
-    icon: 'pi pi-chart-line',
-    tags: ['실시간', '모니터링']
-  },
-  {
-    title: '주간 통계',
-    description: '최근 7일간<br>통계 분석',
-    icon: 'pi pi-calendar',
-    tags: ['추이', '분석']
+// Get fac_id from route params or query
+const facId = computed(() => route.params.facId || route.query.fac_id || 'R3')
+
+// State for selections
+const selectedR3Options = ref([])
+const selectedDevice = ref('')
+const r3Options = ref([])
+const deviceOptions = ref([])
+const statisticsData = ref(null)
+const loading = ref(false)
+
+// Computed property to check if valid selection is made
+const hasValidSelection = computed(() => {
+  if (facId.value === 'R3') {
+    return selectedR3Options.value.length > 0
+  } else {
+    return selectedDevice.value !== ''
   }
-]
-
-// Current status data
-const currentStatus = ref({
-  active: 15,
-  inactive: 3,
-  error: 2
 })
 
-// Device list for current status
-const deviceList = ref([
-  {
-    name: 'Device-A01',
-    type: 'Sensor',
-    status: '활성',
-    lastActive: '2분 전',
-    temperature: 25
-  },
-  {
-    name: 'Device-B02',
-    type: 'Controller',
-    status: '활성',
-    lastActive: '5분 전',
-    temperature: 28
-  },
-  {
-    name: 'Device-C03',
-    type: 'Sensor',
-    status: '비활성',
-    lastActive: '1시간 전',
-    temperature: 22
-  },
-  {
-    name: 'Device-D04',
-    type: 'Monitor',
-    status: '오류',
-    lastActive: '30분 전',
-    temperature: 35
-  }
-])
-
-// Weekly statistics data
-const weeklyStats = ref({
-  totalDevices: 20,
-  avgUptime: 94.5,
-  totalWarnings: 12,
-  totalErrors: 3
-})
-
-// Get badge severity based on status
-const getStatusSeverity = (status) => {
-  switch (status) {
-    case '활성':
-      return 'success'
-    case '비활성':
-      return 'warning'
-    case '오류':
-      return 'danger'
-    default:
-      return 'secondary'
+// Toggle R3 option selection
+const toggleR3Option = (option) => {
+  const index = selectedR3Options.value.indexOf(option)
+  if (index > -1) {
+    selectedR3Options.value.splice(index, 1)
+  } else {
+    selectedR3Options.value.push(option)
   }
 }
 
-// Fetch current status
-const fetchCurrentStatus = async () => {
-  // TODO: Implement API call to get current device status
-  // const response = await fetch('/api/devices/status')
-  // currentStatus.value = await response.json()
+// Fetch device options based on fac_id
+const fetchDeviceOptions = async () => {
+  try {
+    const response = await axios.get(`/api/device-statistics/device-options`, {
+      params: { fac_id: facId.value }
+    })
+    
+    if (facId.value === 'R3') {
+      r3Options.value = response.data.options
+    } else {
+      deviceOptions.value = response.data.options
+    }
+  } catch (error) {
+    console.error('Error fetching device options:', error)
+    // Fallback to dummy data
+    if (facId.value === 'R3') {
+      r3Options.value = ['DRAM', 'NAND', 'NM']
+    } else {
+      deviceOptions.value = [
+        'DEV-Alpha-001', 'DEV-Beta-002', 'DEV-Gamma-003', 'DEV-Delta-004',
+        'DEV-Epsilon-005', 'DEV-Zeta-006', 'DEV-Eta-007', 'DEV-Theta-008',
+        'DEV-Iota-009', 'DEV-Kappa-010'
+      ]
+    }
+  }
 }
 
-// Fetch weekly statistics
-const fetchWeeklyStats = async () => {
-  // TODO: Implement API call to get weekly statistics
-  // const response = await fetch('/api/devices/weekly-stats')
-  // weeklyStats.value = await response.json()
+// Fetch device statistics data
+const fetchDeviceData = async () => {
+  if (!hasValidSelection.value) return
+  
+  loading.value = true
+  statisticsData.value = null
+  
+  try {
+    if (facId.value === 'R3') {
+      // For R3, fetch data for each selected option
+      const promises = selectedR3Options.value.map(option =>
+        axios.get(`/api/device-statistics/device-data`, {
+          params: { fac_id: facId.value, option }
+        })
+      )
+      
+      const responses = await Promise.all(promises)
+      
+      // Combine data from all selected options
+      const combinedData = {
+        data: [],
+        totalCount: 0,
+        activeCount: 0,
+        warningCount: 0,
+        errorCount: 0
+      }
+      
+      responses.forEach(response => {
+        if (response.data.data) {
+          combinedData.data.push(...response.data.data)
+          combinedData.totalCount += response.data.data.length
+          // Calculate other stats based on your data structure
+          combinedData.activeCount += response.data.data.filter(item => item.skip_yn === 'No').length
+          combinedData.warningCount += response.data.data.filter(item => item.para_all < 600).length
+          combinedData.errorCount += response.data.data.filter(item => item.skip_yn === 'Yes').length
+        }
+      })
+      
+      statisticsData.value = combinedData
+    } else {
+      // For non-R3, fetch data for selected device
+      const response = await axios.get(`/api/device-statistics/device-data`, {
+        params: { fac_id: facId.value, option: selectedDevice.value }
+      })
+      
+      const data = response.data.data || []
+      statisticsData.value = {
+        data: data,
+        totalCount: data.length,
+        activeCount: data.filter(item => item.skip_yn === 'No').length,
+        warningCount: data.filter(item => item.para_all < 600).length,
+        errorCount: data.filter(item => item.skip_yn === 'Yes').length
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching device data:', error)
+    statisticsData.value = null
+  } finally {
+    loading.value = false
+  }
 }
+
+// Watch for selection changes to auto-fetch data
+watch([selectedR3Options, selectedDevice], () => {
+  if (hasValidSelection.value) {
+    fetchDeviceData()
+  }
+}, { deep: true })
+
+// Watch for fac_id changes to reset selections and fetch options
+watch(facId, () => {
+  selectedR3Options.value = []
+  selectedDevice.value = ''
+  statisticsData.value = null
+  fetchDeviceOptions()
+}, { immediate: true })
 
 onMounted(() => {
-  fetchCurrentStatus()
-  fetchWeeklyStats()
+  fetchDeviceOptions()
 })
 </script>
 

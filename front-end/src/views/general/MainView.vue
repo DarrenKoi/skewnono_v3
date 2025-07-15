@@ -188,8 +188,8 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 import Select from 'primevue/select'
@@ -198,6 +198,7 @@ import { useFabStore } from '@/stores/fab'
 import { healthQueries } from '@/services/healthService'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 
 // Use Pinia store directly
@@ -279,8 +280,33 @@ const handleNavigation = (path) => {
     return
   }
 
-  router.push(path)
+  // Build URL with fac_id
+  const urlWithFab = `/${selectedFab.value}${path}`
+  router.push(urlWithFab)
 }
+
+// Handle query parameters for edge cases
+onMounted(() => {
+  if (route.query.needsFab) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Fab Selection Required',
+      detail: 'Please select a fabrication facility to access this feature',
+      life: 5000
+    })
+    showFabAlert.value = true
+  }
+  
+  if (route.query.invalidFab) {
+    toast.add({
+      severity: 'error',
+      summary: 'Invalid Fab',
+      detail: `The fab "${route.query.invalidFab}" is not valid. Please select a valid fabrication facility.`,
+      life: 5000
+    })
+    showFabAlert.value = true
+  }
+})
 
 // Cleanup on unmount
 onUnmounted(() => {

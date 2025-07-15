@@ -8,7 +8,9 @@
       "Bash(rm:*)",
       "Bash(mv:*)",
       "Bash(ls:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }

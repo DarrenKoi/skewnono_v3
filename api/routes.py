@@ -22,6 +22,21 @@ def health_check():
     })
 
 
+@api_bp.route('/fab-list', methods=['GET'])
+def get_fab_list():
+    fab_list_dict = {
+        "R3": ["R3", "R4"],
+        "M16": ["M16A", "M16B", "M16C", "M16E"],
+        "M15": ["M15A", "M15B", "M15X"],
+        "M14": ["M14A", "M14B"],
+        "M11": ["M11A", "M11B"],
+        "M10": ["M10A", "M10C"]
+    }
+
+    """Get fab list dictionary"""
+    return jsonify(fab_list_dict)
+
+
 @api_bp.route('/jobs/status', methods=['GET'])
 def get_jobs_status():
     """Get status of all scheduled jobs"""

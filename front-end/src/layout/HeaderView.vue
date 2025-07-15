@@ -45,7 +45,7 @@
           <li class="w-full lg:w-auto">
             <a @click.prevent="handleNavigation('/equipment-status')"
               class="flex px-4 lg:px-6 py-3 hover:text-primary font-medium transition-all duration-150 items-center gap-2 rounded-md cursor-pointer"
-              :class="route.path === '/equipment-status' ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
+              :class="route.path.includes('/equipment-status') ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
               <i class="pi pi-desktop" />
               <span>장비 현황</span>
             </a>
@@ -53,7 +53,7 @@
           <li class="w-full lg:w-auto">
             <a @click.prevent="handleNavigation('/recipe-search')"
               class="flex px-4 lg:px-6 py-3 hover:text-primary font-medium transition-all duration-150 items-center gap-2 rounded-md cursor-pointer"
-              :class="route.path === '/recipe-search' ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
+              :class="route.path.includes('/recipe-search') ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
               <i class="pi pi-search" />
               <span>Recipe 검색</span>
             </a>
@@ -61,7 +61,7 @@
           <li class="w-full lg:w-auto">
             <a @click.prevent="handleNavigation('/device-statistics')"
               class="flex px-4 lg:px-6 py-3 hover:text-primary font-medium transition-all duration-150 items-center gap-2 rounded-md cursor-pointer"
-              :class="route.path === '/device-statistics' ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
+              :class="route.path.includes('/device-statistics') ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
               <i class="pi pi-chart-bar" />
               <span>디바이스 통계</span>
             </a>
@@ -69,7 +69,7 @@
           <li class="w-full lg:w-auto">
             <a @click.prevent="handleNavigation('/fail-issue')"
               class="flex px-4 lg:px-6 py-3 hover:text-primary font-medium transition-all duration-150 items-center gap-2 rounded-md cursor-pointer"
-              :class="route.path === '/fail-issue' ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
+              :class="route.path.includes('/fail-issue') ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
               <i class="pi pi-exclamation-triangle" />
               <span>Fail Issue</span>
             </a>
@@ -77,7 +77,7 @@
           <li class="w-full lg:w-auto">
             <a @click.prevent="handleNavigation('/hardware-management')"
               class="flex px-4 lg:px-6 py-3 hover:text-primary font-medium transition-all duration-150 items-center gap-2 rounded-md cursor-pointer"
-              :class="route.path === '/hardware-management' ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
+              :class="route.path.includes('/hardware-management') ? 'text-primary bg-primary/10' : 'hover:bg-surface-100 dark:hover:bg-surface-800'">
               <i class="pi pi-cog" />
               <span>H/W 관리</span>
             </a>
@@ -124,6 +124,13 @@ const handleFabChange = (event) => {
   const newFab = event.value || event
   if (newFab) {
     fabStore.setSelectedFab(newFab)
+    
+    // If we're on a fab-specific route, redirect to the new fab
+    if (route.params.fac_id) {
+      const currentPath = route.path.replace(`/${route.params.fac_id}`, '')
+      const newPath = `/${newFab}${currentPath}`
+      router.push(newPath)
+    }
   }
 }
 
@@ -146,7 +153,9 @@ const handleNavigation = (path) => {
     return
   }
   
-  router.push(path)
+  // Build URL with fac_id
+  const urlWithFab = `/${fabStore.selectedFab}${path}`
+  router.push(urlWithFab)
 }
 </script>
 

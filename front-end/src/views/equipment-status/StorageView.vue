@@ -27,15 +27,6 @@
             <h3 class="text-lg font-medium">CD-SEM & HV-SEM 스토리지 현황</h3>
             <p class="text-sm text-surface-500">스토리지 사용률 높은 순으로 정렬</p>
           </div>
-          <div class="flex gap-2">
-            <Button 
-              label="새로고침" 
-              icon="pi pi-refresh" 
-              size="small" 
-              :loading="isLoading"
-              @click="refetch"
-            />
-          </div>
         </div>
         
         <!-- Equipment Type Filter Buttons -->
@@ -171,7 +162,7 @@ import { useFabStore } from '@/stores/fab'
 const fabStore = useFabStore()
 
 // Fetch storage data using React Query
-const { data: rawStorageData, isLoading, isError, refetch } = useQuery(equipmentQueries.storage())
+const { data: rawStorageData, isLoading, isError } = useQuery(equipmentQueries.storage())
 
 // Filter state
 const selectedEquipmentType = ref(null)

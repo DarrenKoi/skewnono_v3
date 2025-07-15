@@ -219,6 +219,53 @@ Key packages for the PrimeVue + Tailwind CSS v4 setup:
 - `unplugin-vue-components` - Auto-import for PrimeVue components
 - `@tanstack/vue-query` - Data fetching and caching library
 - `axios` - HTTP client for API requests
+- `echarts` - Chart library for data visualization
+- `vue-echarts` - Vue wrapper for ECharts
+
+## Charts and Data Visualization
+
+### ECharts Integration
+The application uses ECharts for data visualization instead of PrimeVue Chart components.
+
+#### Usage Pattern
+```javascript
+// Import VChart from vue-echarts
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart, BarChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import VChart from 'vue-echarts'
+
+// Register necessary components
+use([
+  CanvasRenderer,
+  LineChart,
+  BarChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent
+])
+
+// In component
+const chartOption = {
+  xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+  yAxis: { type: 'value' },
+  series: [{ data: [820, 932, 901, 934, 1290], type: 'line' }]
+}
+```
+
+#### Template Usage
+```vue
+<template>
+  <div ref="chartRef" style="height: 400px; width: 100%;"></div>
+</template>
+```
+
+#### Important Notes
+- Always dispose of chart instances in `onUnmounted` to prevent memory leaks
+- Handle window resize events to make charts responsive
+- Use `ref` to get DOM element reference for chart initialization
+- Update charts using `setOption()` method when data changes
 
 ## Data Fetching with Vue Query
 

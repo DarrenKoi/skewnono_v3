@@ -1,5 +1,5 @@
 <template>
-  <div class="not-available bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
+  <div class="not-available bg-surface-50 dark:bg-surface-950 px-6 py-20 md:px-12 xl:px-20">
     <div class="flex flex-col items-start gap-4 mb-8">
       <Button 
         icon="pi pi-arrow-left" 
@@ -11,7 +11,12 @@
       />
       <div class="flex flex-col gap-2">
         <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Data 확인 불가 현황</div>
-        <div class="text-surface-500 dark:text-surface-300 text-lg">스큐노노가 접근 불가능한 장비 리스트</div>
+        <div class="text-surface-500 dark:text-surface-300 text-lg">
+          스큐노노가 접근 불가능한 장비 리스트
+          <span v-if="fabStore.currentFab" class="ml-2 font-medium text-primary">
+            (FAB: {{ fabStore.currentFab }})
+          </span>
+        </div>
       </div>
     </div>
 
@@ -69,6 +74,29 @@
         </div>
       </div>
 
+      <!-- FAB Filter -->
+      <div class="mb-4">
+        <div class="text-lg font-semibold mb-3">FAB 선택</div>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            label="전체"
+            :severity="selectedFab === null ? 'primary' : 'secondary'"
+            :outlined="selectedFab !== null"
+            size="small"
+            @click="selectFab(null)"
+          />
+          <Button
+            v-for="fab in availableFabs"
+            :key="fab.name"
+            :label="`${fab.name} (${fab.count})`"
+            :severity="selectedFab === fab.name ? 'primary' : 'secondary'"
+            :outlined="selectedFab !== fab.name"
+            size="small"
+            @click="selectFab(fab.name)"
+          />
+        </div>
+      </div>
+
       <!-- Model filter -->
       <div class="flex flex-col gap-4 mb-6">
         <h3 class="text-lg font-medium">모델 필터</h3>
@@ -93,8 +121,12 @@
           :paginator="true" 
           :rows="10" 
           :loading="isLoading"
-          responsiveLayout="scroll"
-          class="p-datatable-sm"
+          stripedRows
+          showGridlines
+          size="small"
+          scrollable
+          scrollHeight="600px"
+          class="text-sm"
         >
           <Column field="eqp_id" header="장비 ID" sortable />
           <Column field="eqp_model_cd" header="모델" sortable />
@@ -128,18 +160,59 @@
 import { ref, computed, onMounted } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { equipmentQueries } from '@/services/equipmentService'
+import { useFabStore } from '@/stores/fab'
+
+// FAB store
+const fabStore = useFabStore()
 
 // Reactive state
 const selectedCategory = ref('equipment_off')
+const selectedFab = ref(null)
 const selectedModel = ref(null)
 
 // Fetch not available equipment data
 const { data: notAvailableData, isLoading, isError } = useQuery(equipmentQueries.notAvailable())
 
+// Get all available FABs from raw data filtered by current fac_id
+const availableFabs = computed(() => {
+  if (!notAvailableData.value?.data) return []
+  
+  const fabs = {}
+  const categoryData = notAvailableData.value.data[selectedCategory.value] || []
+  
+  // First filter by fac_id from navbar store
+  const filteredData = fabStore.currentFab 
+    ? categoryData.filter(item => item.fac_id === fabStore.currentFab)
+    : categoryData
+  
+  filteredData.forEach(item => {
+    if (item.fab_name) {
+      if (!fabs[item.fab_name]) {
+        fabs[item.fab_name] = { name: item.fab_name, count: 0 }
+      }
+      fabs[item.fab_name].count++
+    }
+  })
+  
+  return Object.values(fabs).sort((a, b) => a.name.localeCompare(b.name))
+})
+
 // Computed properties
 const currentCategoryData = computed(() => {
   if (!notAvailableData.value?.data) return []
-  return notAvailableData.value.data[selectedCategory.value] || []
+  const categoryData = notAvailableData.value.data[selectedCategory.value] || []
+  
+  // First filter by fac_id from navbar store
+  let filteredData = fabStore.currentFab 
+    ? categoryData.filter(item => item.fac_id === fabStore.currentFab)
+    : categoryData
+  
+  // Then filter by selected fab_name if any
+  if (selectedFab.value) {
+    filteredData = filteredData.filter(item => item.fab_name === selectedFab.value)
+  }
+  
+  return filteredData
 })
 
 const availableModels = computed(() => {
@@ -178,18 +251,52 @@ const getCategoryTitle = () => {
   }
 }
 
-// Reset model filter when category changes
-const resetModelFilter = () => {
+// Selection methods
+const selectFab = (fab) => {
+  selectedFab.value = fab
+  selectedModel.value = null // Reset model when FAB changes
+}
+
+// Reset filters when category changes
+const resetFilters = () => {
+  selectedFab.value = null
   selectedModel.value = null
 }
 
 // Watch for category changes
 import { watch } from 'vue'
 watch(selectedCategory, () => {
-  resetModelFilter()
+  resetFilters()
+})
+
+// Watch for store FAB changes to reset selections
+watch(() => fabStore.currentFab, () => {
+  selectedFab.value = null
+  selectedModel.value = null
 })
 </script>
 
 <style scoped>
-/* Component-specific styles if needed */
+:deep(.p-datatable) {
+  width: 100%;
+}
+
+:deep(.p-datatable-wrapper) {
+  width: 100%;
+}
+
+:deep(.p-datatable-header) {
+  background-color: transparent;
+  border: none;
+  padding: 1rem 1.5rem;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th) {
+  background-color: var(--p-surface-100);
+  font-weight: 600;
+}
+
+.p-button {
+  transition: all 0.2s ease;
+}
 </style>
