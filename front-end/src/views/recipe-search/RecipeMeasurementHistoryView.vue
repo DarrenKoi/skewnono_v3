@@ -1,29 +1,31 @@
 <template>
-  <div class="recipe-measurement-history bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
-    <div class="flex flex-col items-start gap-2 mb-8">
-      <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Meas. History</div>
-      <div class="text-surface-500 dark:text-surface-300 text-lg">측정 기록을 확인할 수 있습니다</div>
+  <div class="recipe-measurement-history bg-surface-50 dark:bg-surface-950 px-6 py-20 md:px-12 xl:px-20">
+    <div class="flex flex-col items-start gap-4 mb-8">
+      <Button 
+        icon="pi pi-arrow-left" 
+        label="Recipe 검색으로 돌아가기"
+        outlined
+        size="large"
+        class="mb-2"
+        @click="$router.push({ name: 'recipe-search' })" 
+      />
+      <div class="flex flex-col gap-2">
+        <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Meas. History</div>
+        <div class="text-surface-500 dark:text-surface-300 text-lg">측정 기록을 확인할 수 있습니다</div>
+      </div>
     </div>
 
     <!-- Content Display -->
     <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
       <div class="flex flex-col gap-6">
-        <!-- AutoComplete Search -->
+        <!-- Selected Recipe Display -->
         <div class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">Recipe 검색</label>
-          <AutoComplete 
-            v-model="selectedRecipe" 
-            :suggestions="filteredRecipes"
-            :forceSelection="true"
-            @complete="searchRecipe"
-            placeholder="Recipe 이름을 입력하세요..."
-            class="w-full"
-            :dropdown="true"
-            :minLength="1"
-          />
-          <small class="text-surface-500 dark:text-surface-400">
-            * Recipe를 검색하고 목록에서 선택하세요
-          </small>
+          <label class="text-surface-900 dark:text-surface-0 font-semibold">선택된 Recipe</label>
+          <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-3 border">
+            <p class="text-surface-700 dark:text-surface-200">
+              {{ selectedRecipe || 'Recipe 검색 페이지에서 선택하세요' }}
+            </p>
+          </div>
         </div>
 
         <!-- Date Range Selection -->
@@ -147,27 +149,12 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 
 const selectedRecipe = ref(null)
-const filteredRecipes = ref([])
 const actionResult = ref(null)
 const historyData = ref(null)
 const isLoading = ref(false)
 const dateRange = ref(null)
 const chartRef = ref(null)
 let chartInstance = null
-
-// Sample recipe data - replace with actual API call
-const recipeDatabase = [
-  'RECIPE_001_STANDARD',
-  'RECIPE_002_ADVANCED',
-  'RECIPE_003_CUSTOM',
-  'RECIPE_004_TEST',
-  'RECIPE_005_PRODUCTION',
-  'RECIPE_006_SPECIAL',
-  'RECIPE_007_MAINTENANCE',
-  'RECIPE_008_CALIBRATION',
-  'RECIPE_009_VALIDATION',
-  'RECIPE_010_EMERGENCY'
-]
 
 // Chart option for ECharts
 const chartOption = computed(() => {
@@ -266,8 +253,34 @@ const handleResize = () => {
 }
 
 onMounted(() => {
+  const storedRecipe = sessionStorage.getItem('selectedRecipe')
+  const storedDateRange = sessionStorage.getItem('dateRange')
+  
+  let shouldAutoExecute = false
+  
+  if (storedRecipe) {
+    selectedRecipe.value = storedRecipe
+    sessionStorage.removeItem('selectedRecipe')
+    shouldAutoExecute = true
+  }
+  
+  if (storedDateRange) {
+    try {
+      const dates = JSON.parse(storedDateRange)
+      dateRange.value = dates.map(dateStr => new Date(dateStr))
+      sessionStorage.removeItem('dateRange')
+    } catch (e) {
+      console.error('Error parsing stored date range:', e)
+    }
+  }
+  
   initChart()
   window.addEventListener('resize', handleResize)
+  
+  // Auto-execute if we have stored data
+  if (shouldAutoExecute && dateRange.value) {
+    viewMeasurementHistory()
+  }
 })
 
 onUnmounted(() => {
@@ -276,14 +289,6 @@ onUnmounted(() => {
     chartInstance.dispose()
   }
 })
-
-// Search recipes based on input
-const searchRecipe = (event) => {
-  const query = event.query.toLowerCase()
-  filteredRecipes.value = recipeDatabase.filter(recipe => 
-    recipe.toLowerCase().includes(query)
-  )
-}
 
 // Format date
 const formatDate = (date) => {

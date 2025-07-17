@@ -98,17 +98,24 @@
       </div>
 
       <!-- Model filter -->
-      <div class="flex flex-col gap-4 mb-6">
-        <h3 class="text-lg font-medium">모델 필터</h3>
-        <div class="flex gap-4">
-          <Dropdown 
-            v-model="selectedModel" 
-            :options="availableModels" 
-            optionLabel="label"
-            optionValue="value"
-            placeholder="모델 선택"
-            class="w-64"
-            showClear
+      <div class="mb-4">
+        <div class="text-lg font-semibold mb-3">모델 선택</div>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            label="전체"
+            :severity="selectedModel === null ? 'primary' : 'secondary'"
+            :outlined="selectedModel !== null"
+            size="small"
+            @click="selectModel(null)"
+          />
+          <Button
+            v-for="model in availableModels"
+            :key="model.name"
+            :label="`${model.name} (${model.count})`"
+            :severity="selectedModel === model.name ? 'primary' : 'secondary'"
+            :outlined="selectedModel !== model.name"
+            size="small"
+            @click="selectModel(model.name)"
           />
         </div>
       </div>
@@ -157,7 +164,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { equipmentQueries } from '@/services/equipmentService'
 import { useFabStore } from '@/stores/fab'
@@ -218,11 +225,17 @@ const currentCategoryData = computed(() => {
 const availableModels = computed(() => {
   if (!currentCategoryData.value || currentCategoryData.value.length === 0) return []
   
-  const models = [...new Set(currentCategoryData.value.map(item => item.eqp_model_cd))]
-  return [
-    { label: '모든 모델', value: null },
-    ...models.map(model => ({ label: model, value: model }))
-  ]
+  const models = {}
+  currentCategoryData.value.forEach(item => {
+    if (item.eqp_model_cd) {
+      if (!models[item.eqp_model_cd]) {
+        models[item.eqp_model_cd] = { name: item.eqp_model_cd, count: 0 }
+      }
+      models[item.eqp_model_cd].count++
+    }
+  })
+  
+  return Object.values(models).sort((a, b) => a.name.localeCompare(b.name))
 })
 
 const filteredData = computed(() => {
@@ -255,6 +268,10 @@ const getCategoryTitle = () => {
 const selectFab = (fab) => {
   selectedFab.value = fab
   selectedModel.value = null // Reset model when FAB changes
+}
+
+const selectModel = (model) => {
+  selectedModel.value = model
 }
 
 // Reset filters when category changes

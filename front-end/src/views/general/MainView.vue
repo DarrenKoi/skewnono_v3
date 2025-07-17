@@ -126,10 +126,12 @@
         </div>
       </div>
 
-      <!-- Skewboa Card (No fab requirement) -->
+      <!-- Skewvoir Card -->
       <div @click="handleNavigation('/skewvoir')" class="group">
-        <div
-          class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-teal-500 cursor-pointer">
+        <div :class="[
+          'bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg transition-all duration-300 border-l-4 border-teal-500',
+          selectedFab ? 'hover:shadow-xl cursor-pointer' : 'opacity-60 cursor-not-allowed'
+        ]">
           <div class="flex items-center justify-between mb-4">
             <i class="pi pi-eye text-3xl text-teal-500" />
             <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-teal-500 transition-colors">
@@ -159,31 +161,6 @@
         <span>{{ apiMessage }}</span>
       </div>
     </div>
-
-    <!-- Quick Stats -->
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-        Quick Overview - {{ selectedFab }} Fab
-      </h2>
-      <div class="grid grid-cols-4 gap-4">
-        <div class="text-center">
-          <div class="text-2xl font-bold text-blue-600 mb-1">24</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">Active Equipment</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-green-600 mb-1">98.5%</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">Uptime</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-purple-600 mb-1">156</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">Recipes</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-orange-600 mb-1">2</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">Active Issues</div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -203,7 +180,7 @@ const toast = useToast()
 
 // Use Pinia store directly
 const fabStore = useFabStore()
-const { selectedFab, fabList } = storeToRefs(fabStore)
+const { selectedFab, fabList, fabListLoading } = storeToRefs(fabStore)
 
 // Local fab selection for the alert
 const localSelectedFab = ref(selectedFab.value || '')
@@ -248,15 +225,24 @@ watch(selectedFab, (newVal) => {
   if (newVal) {
     showFabAlert.value = false
   }
+
+  // If we're on the root path and fab is now selected, redirect to fab-specific page
+  // Only redirect if fabList is loaded to avoid race condition
+  if (route.path === '/' && newVal && !fabListLoading.value) {
+    router.replace(`/${newVal}`)
+  }
+})
+
+// Watch for fabList loading completion to handle redirect
+watch(fabListLoading, (isLoading) => {
+  // When fabList finishes loading and we have a selected fab on root path
+  if (!isLoading && route.path === '/' && selectedFab.value) {
+    router.replace(`/${selectedFab.value}`)
+  }
 })
 
 // Handle navigation with fab check
 const handleNavigation = (path) => {
-  // Special case: SkewVoir doesn't require fab selection
-  if (path === '/skewvoir') {
-    router.push(path)
-    return
-  }
 
   if (!selectedFab.value) {
     // Show toast notification
@@ -287,6 +273,14 @@ const handleNavigation = (path) => {
 
 // Handle query parameters for edge cases
 onMounted(() => {
+  // Check if we're on the root path and have a saved fab selection
+  // Only redirect if fabList is loaded to avoid race condition
+  if (route.path === '/' && selectedFab.value && !fabListLoading.value) {
+    // Redirect to the fab-specific main page
+    router.replace(`/${selectedFab.value}`)
+    return
+  }
+
   if (route.query.needsFab) {
     toast.add({
       severity: 'warn',
@@ -296,7 +290,7 @@ onMounted(() => {
     })
     showFabAlert.value = true
   }
-  
+
   if (route.query.invalidFab) {
     toast.add({
       severity: 'error',

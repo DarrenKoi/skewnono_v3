@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { fabQueries } from '@/services/fabService'
 
 export const useFabStore = defineStore('fab', () => {
   // State
   const selectedFab = ref('')
+  const localStorageInitialized = ref(false)
   
   // Fetch fab list from API
   const { data: fabListData, isLoading: fabListLoading } = useQuery(fabQueries.list())
@@ -24,6 +25,7 @@ export const useFabStore = defineStore('fab', () => {
     const savedFab = localStorage.getItem('selectedFab')
     if (savedFab && fabList.value.includes(savedFab)) {
       selectedFab.value = savedFab
+      localStorageInitialized.value = true
     }
   }
 
@@ -34,9 +36,17 @@ export const useFabStore = defineStore('fab', () => {
     }
   }
 
-
-  // Initialize on store creation
-  initializeFabSelection()
+  // Watch for fabList changes to re-initialize from localStorage
+  watch(fabList, (newFabList) => {
+    // Only initialize once when fabList is loaded and we haven't initialized yet
+    if (newFabList.length > 0 && !localStorageInitialized.value && !selectedFab.value) {
+      const savedFab = localStorage.getItem('selectedFab')
+      if (savedFab && newFabList.includes(savedFab)) {
+        selectedFab.value = savedFab
+        localStorageInitialized.value = true
+      }
+    }
+  }, { immediate: true })
 
   return {
     // State

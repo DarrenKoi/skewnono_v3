@@ -26,11 +26,11 @@ def health_check():
 def get_fab_list():
     fab_list_dict = {
         "R3": ["R3", "R4"],
-        "M16": ["M16A", "M16B", "M16C", "M16E"],
-        "M15": ["M15A", "M15B", "M15X"],
+        "M16": ["M16A", "M16B", "M16E"],
+        "M15": ["M15A", "M15B"],
         "M14": ["M14A", "M14B"],
         "M11": ["M11A", "M11B"],
-        "M10": ["M10A", "M10C"]
+        "M10": ["M10A", "M10B"]
     }
 
     """Get fab list dictionary"""

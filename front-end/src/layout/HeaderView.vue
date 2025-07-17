@@ -124,7 +124,7 @@ const handleFabChange = (event) => {
   const newFab = event.value || event
   if (newFab) {
     fabStore.setSelectedFab(newFab)
-    
+
     // If we're on a fab-specific route, redirect to the new fab
     if (route.params.fac_id) {
       const currentPath = route.path.replace(`/${route.params.fac_id}`, '')
@@ -136,13 +136,7 @@ const handleFabChange = (event) => {
 
 // Handle navigation with fab check
 const handleNavigation = (path) => {
-  // Special case: SkewVoir doesn't require fab selection
-  if (path === '/skewvoir') {
-    router.push(path)
-    return
-  }
-  
-  // Check if fab is selected for other routes
+  // Check if fab is selected for all routes
   if (!fabStore.selectedFab) {
     toast.add({
       severity: 'warn',
@@ -152,7 +146,7 @@ const handleNavigation = (path) => {
     })
     return
   }
-  
+
   // Build URL with fac_id
   const urlWithFab = `/${fabStore.selectedFab}${path}`
   router.push(urlWithFab)

@@ -1,29 +1,31 @@
 <template>
-  <div class="recipe-horizontal-check bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
-    <div class="flex flex-col items-start gap-2 mb-8">
-      <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">횡전개 체크</div>
-      <div class="text-surface-500 dark:text-surface-300 text-lg">Recipe의 횡전개 여부와 Version을 체크할 수 있습니다</div>
+  <div class="recipe-horizontal-check bg-surface-50 dark:bg-surface-950 px-6 py-20 md:px-12 xl:px-20">
+    <div class="flex flex-col items-start gap-4 mb-8">
+      <Button 
+        icon="pi pi-arrow-left" 
+        label="Recipe 검색으로 돌아가기"
+        outlined
+        size="large"
+        class="mb-2"
+        @click="$router.push({ name: 'recipe-search' })" 
+      />
+      <div class="flex flex-col gap-2">
+        <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">횡전개 체크</div>
+        <div class="text-surface-500 dark:text-surface-300 text-lg">Recipe의 횡전개 여부와 Version을 체크할 수 있습니다</div>
+      </div>
     </div>
 
     <!-- Content Display -->
     <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
       <div class="flex flex-col gap-6">
-        <!-- AutoComplete Search -->
+        <!-- Selected Recipe Display -->
         <div class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">Recipe 검색</label>
-          <AutoComplete 
-            v-model="selectedRecipe" 
-            :suggestions="filteredRecipes"
-            :forceSelection="true"
-            @complete="searchRecipe"
-            placeholder="Recipe 이름을 입력하세요..."
-            class="w-full"
-            :dropdown="true"
-            :minLength="1"
-          />
-          <small class="text-surface-500 dark:text-surface-400">
-            * Recipe를 검색하고 목록에서 선택하세요
-          </small>
+          <label class="text-surface-900 dark:text-surface-0 font-semibold">선택된 Recipe</label>
+          <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-3 border">
+            <p class="text-surface-700 dark:text-surface-200">
+              {{ selectedRecipe || 'Recipe 검색 페이지에서 선택하세요' }}
+            </p>
+          </div>
         </div>
 
         <!-- Action Button -->
@@ -104,35 +106,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const selectedRecipe = ref(null)
-const filteredRecipes = ref([])
 const actionResult = ref(null)
 const checkResults = ref(null)
 const isChecking = ref(false)
 
-// Sample recipe data - replace with actual API call
-const recipeDatabase = [
-  'RECIPE_001_STANDARD',
-  'RECIPE_002_ADVANCED',
-  'RECIPE_003_CUSTOM',
-  'RECIPE_004_TEST',
-  'RECIPE_005_PRODUCTION',
-  'RECIPE_006_SPECIAL',
-  'RECIPE_007_MAINTENANCE',
-  'RECIPE_008_CALIBRATION',
-  'RECIPE_009_VALIDATION',
-  'RECIPE_010_EMERGENCY'
-]
-
-// Search recipes based on input
-const searchRecipe = (event) => {
-  const query = event.query.toLowerCase()
-  filteredRecipes.value = recipeDatabase.filter(recipe => 
-    recipe.toLowerCase().includes(query)
-  )
-}
+// Load selected recipe from sessionStorage and auto-execute if present
+onMounted(() => {
+  const storedRecipe = sessionStorage.getItem('selectedRecipe')
+  if (storedRecipe) {
+    selectedRecipe.value = storedRecipe
+    sessionStorage.removeItem('selectedRecipe')
+    // Auto-execute the action
+    checkHorizontalDeploy()
+  }
+})
 
 // Action: Check Horizontal Deploy
 const checkHorizontalDeploy = async () => {
