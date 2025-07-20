@@ -34,6 +34,9 @@ def version_not_available():
     sample_size = max(1, int(len(df) * 0.1))
     random_indices = np.random.choice(df.index, size=sample_size, replace=False)
     
+    # To avoid FutureWarning, cast to a type that can hold both numbers and strings (object).
+    df['version'] = df['version'].astype(object)
+
     # Set version to empty string for selected equipment
     df.loc[random_indices, 'version'] = ""
     

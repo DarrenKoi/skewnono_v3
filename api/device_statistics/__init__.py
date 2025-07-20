@@ -1,0 +1,1 @@
+# Device statistics module initialization

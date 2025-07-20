@@ -300,6 +300,22 @@ onMounted(() => {
     })
     showFabAlert.value = true
   }
+
+  if (route.query.accessDenied) {
+    const reason = route.query.reason
+    let message = 'Access denied to this resource'
+    
+    if (reason === 'insufficient_permissions') {
+      message = 'You do not have permission to access this feature. Contact your administrator if you believe this is an error.'
+    }
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Access Denied',
+      detail: message,
+      life: 8000
+    })
+  }
 })
 
 // Cleanup on unmount

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MainView from '../views/general/MainView.vue'
 import { useFabStore } from '@/stores/fab'
+import { checkUserAccess, isProtectedRoute } from '@/utils/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,7 +22,7 @@ const router = createRouter({
     {
       path: '/:fac_id/skewvoir',
       name: 'skewvoir',
-      component: () => import('../views/general/SkewVoirView.vue'),
+      component: () => import('../views/SkewVoir/SkewVoirView.vue'),
       meta: { requiresFab: true },
     },
     // Routes with fac_id parameter
@@ -82,8 +83,18 @@ const router = createRouter({
     {
       path: '/:fac_id/device-statistics',
       name: 'device-statistics',
-      component: () => import('../views/DeviceStatisticsView.vue'),
+      component: () => import('../views/device-statistics/DeviceStatisticsView.vue'),
       meta: { requiresFab: true },
+    },
+    {
+      path: '/R3/device-statistics/current-status',
+      name: 'device-statistics-current-status-r3',
+      component: () => import('../views/device-statistics/facR3/CurrentStatusView.vue'),
+    },
+    {
+      path: '/R3/device-statistics/weekly-trend',
+      name: 'device-statistics-weekly-trend-r3',
+      component: () => import('../views/device-statistics/facR3/WeeklyTrendView.vue'),
     },
     {
       path: '/:fac_id/fail-issue',
@@ -100,9 +111,26 @@ const router = createRouter({
   ],
 })
 
-// Navigation guard to check fab selection
+// Navigation guard to check fab selection and user access
 router.beforeEach(async (to, from, next) => {
   const fabStore = useFabStore()
+
+  // Check user access for protected routes
+  if (isProtectedRoute(to.path)) {
+    const { hasAccess, userId } = checkUserAccess()
+    
+    if (!hasAccess) {
+      console.warn(`Access denied for user ${userId} to protected route: ${to.path}`)
+      next({
+        path: '/',
+        query: { 
+          accessDenied: 'true',
+          reason: 'insufficient_permissions'
+        }
+      })
+      return
+    }
+  }
 
   // Check if the route requires fab selection
   if (to.meta.requiresFab) {

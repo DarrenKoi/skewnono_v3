@@ -149,6 +149,31 @@ The `sem_lists.py` module generates dummy SEM equipment data with columns:
 - `src/stores/` - Pinia state management
 - `src/views/` - Page components
 
+#### Device Statistics Module Structure
+The device statistics feature is organized under `front-end/src/views/device-statistics/`:
+
+```
+device-statistics/
+├── DeviceStatisticsView.vue     # Main entry component with facility selection
+├── facOthers/                   # Other facilities components
+│   └── FacOthersSelection.vue   # Selection component for non-R3 facilities  
+├── facR3/                       # R3 facility specific components
+│   ├── CurrentStatusView.vue    # Current status dashboard with category selection
+│   ├── FacR3Selection.vue       # R3 facility selection component
+│   ├── WeeklyTrendView.vue      # Weekly trend analysis view
+│   └── chart/                   # Chart components for data visualization
+│       └── CombinedChartsView.vue # Dual-grid ECharts component for parameter & summary data
+```
+
+**Key Components:**
+- **DeviceStatisticsView.vue**: Root component handling facility routing
+- **CurrentStatusView.vue**: Main dashboard displaying equipment status with category filtering
+- **CombinedChartsView.vue**: Specialized chart component displaying:
+  - Top grid: Stacked percentage bars for Para 5, 9, 13, 16 distributions
+  - Bottom grid: Side-by-side bars for total parameters and available recipes
+  - Uses unified data mapping to handle mismatched prodIds between parameter and summary data
+  - Implements defensive data handling and error recovery
+
 ### Frontend Styling Configuration
 
 #### PrimeVue v4 Setup
@@ -198,6 +223,12 @@ The application uses environment variables loaded from `.env` file. Key configur
 - Flask application settings
 - Scheduler timezone (Asia/Seoul)
 
+#### Authentication Environment Variables
+- `AUTH_MODE=bypass` - Bypasses authentication (for development)
+- `AUTH_MODE=enforce` - Enforces authentication (for production)
+- `VITE_AUTH_MODE=bypass` - Frontend authentication bypass (for development)
+- `VITE_AUTH_MODE=enforce` - Frontend authentication enforcement (for production)
+
 ### uWSGI Configuration
 - 2 processes with 2 threads each
 - Memory limits: 256MB RSS reload, 512MB limit
@@ -226,6 +257,32 @@ Key packages for the PrimeVue + Tailwind CSS v4 setup:
 
 ### ECharts Integration
 The application uses ECharts for data visualization instead of PrimeVue Chart components.
+
+#### Device Statistics Charts Implementation
+The `CombinedChartsView.vue` component implements a dual-grid chart system:
+
+**Current Implementation Status:**
+- ✅ **Basic dual-grid rendering**: Two vertically stacked charts with separate axes
+- ✅ **Data unification**: Handles mismatched prodIds between parameter and summary datasets
+- ✅ **Defensive programming**: Comprehensive error handling and data validation
+- ✅ **Responsive design**: Proper resize handling and container management
+- ✅ **Category filtering**: Dynamic chart updates based on selected category
+- ❌ **Tooltip functionality**: Removed due to scope and error issues
+- ❌ **DataZoom controls**: Removed due to synchronization complexity
+- ❌ **Interactive features**: Simplified to basic chart display only
+
+**Technical Details:**
+- Uses `echarts.init()` with canvas renderer and dirty rect optimization
+- Implements Map-based data remapping for efficient prodId alignment  
+- Calculates percentage distributions for parameter data
+- Handles empty/invalid data gracefully with chart clearing
+- Memory management with proper disposal in `onUnmounted`
+
+**Known Limitations:**
+- No zoom or pan functionality
+- No detailed hover information
+- Charts are display-only without user interaction
+- Fixed grid layout (12%-55%-15% vertical distribution)
 
 #### Usage Pattern
 ```javascript
@@ -291,6 +348,39 @@ Services export query options with appropriate cache configurations:
 - `healthQueries` - API health checks (5 min cache)
 - `equipmentQueries` - Equipment data (30 min - 24 hour cache)
 - Query keys factory ensures consistent cache key generation
+
+## Authentication System
+
+The application implements cookie-based authentication using the LASTUSER cookie from SSO. Users whose ID starts with "X" or "x" are restricted from accessing equipment-status and device-statistics features.
+
+### Environment-Aware Authentication
+
+#### Development Mode (Automatic Detection)
+Authentication is bypassed when:
+- Node name starts with "DESKTOP" (home development)
+- `FLASK_ENV=development` or `FLASK_DEBUG=1` (Flask debug mode)
+- Frontend running on localhost (Vite dev mode)
+
+#### Production Mode
+Authentication is enforced when running in company environment:
+- Node names starting with "PC" or containing "SKEWNONO"
+- Production builds and deployments
+
+#### Manual Override
+Use environment variables to force authentication mode:
+- `AUTH_MODE=bypass` - Skip authentication
+- `AUTH_MODE=enforce` - Force authentication
+- `VITE_AUTH_MODE=bypass` - Frontend auth bypass
+- `VITE_AUTH_MODE=enforce` - Frontend auth enforcement
+
+### Protected Routes
+- **Backend**: `/api/equipment-status/*`, `/api/device-statistics/*`
+- **Frontend**: `/:fac_id/equipment-status`, `/:fac_id/device-statistics` and sub-routes
+
+### User Experience
+- Restricted users receive 403 responses with clear error messages
+- Frontend shows access denied notifications and redirects to main page
+- Development users can access all features without cookies
 
 ## Known Issues to Address
 1. Missing proper `create_scheduler` implementation in `index.py` (currently using mock)

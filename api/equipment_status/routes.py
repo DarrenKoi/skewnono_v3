@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify
 import platform
+from utils.auth import require_access
 
 # Create blueprint
 equipment_status_bp = Blueprint('equipment_status', __name__, url_prefix='/equipment-status')
@@ -25,6 +26,7 @@ else:
 
 
 @equipment_status_bp.route('/current-status', methods=['GET'])
+@require_access
 def get_equipment_status():
     """Get current equipment status using environment-aware data loading"""
     try:
@@ -51,6 +53,7 @@ def get_equipment_status():
 
 
 @equipment_status_bp.route('/storage', methods=['GET'])
+@require_access
 def get_equipment_storage():
     """Get equipment storage information using environment-aware data loading"""
     try:
@@ -86,6 +89,7 @@ def get_equipment_storage():
 
 
 @equipment_status_bp.route('/not_available', methods=['GET'])
+@require_access
 def get_not_available_equipment():
     """Get equipment that is not available (Off status, empty version, or empty storage)"""
     try:

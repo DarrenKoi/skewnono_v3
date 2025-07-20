@@ -12,8 +12,16 @@
       "Bash(npm run dev:*)",
       "Bash(npm install:*)",
       "Bash(npm run lint)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(npx:*)",
+      "Bash(python:*)",
+      "Bash(move:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "context7"
+  ]
 }
