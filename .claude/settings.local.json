@@ -16,7 +16,8 @@
       "Bash(npx:*)",
       "Bash(python:*)",
       "Bash(move:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   },

@@ -1,5 +1,4 @@
 import os
-import platform
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,22 +29,13 @@ class Config:
     LOCK_RETRY_DELAY = 1
 
     # Data source configuration
-    # Can be overridden by DATA_SOURCE_MODE environment variable
+    # Controlled by DATA_SOURCE_MODE environment variable
     @staticmethod
     def get_data_source_mode():
-        """Determine data source mode based on platform or env variable"""
-        # Check for environment variable override first
+        """Determine data source mode based on environment variable"""
         env_mode = os.environ.get('DATA_SOURCE_MODE')
         if env_mode in ['dummy', 'real']:
             return env_mode
         
-        # Otherwise determine based on platform
-        node_name = platform.node().upper()
-        if node_name.startswith('DESKTOP'):
-            return 'dummy'
-        elif node_name.startswith('PC') or 'SKEWNONO' in node_name:
-            return 'real'
-        else:
-            return 'dummy'  # Default to dummy for unknown environments
-    
-    DATA_SOURCE_MODE = get_data_source_mode.__func__()
+        # Default to dummy if no environment variable is set
+        return 'dummy'

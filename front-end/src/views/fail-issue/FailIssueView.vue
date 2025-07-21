@@ -1,7 +1,7 @@
 <template>
-  <div class="skewvoir bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
+  <div class="fail-issue bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
     <div class="flex flex-col items-start gap-2 mb-8">
-      <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">SkewVoir</div>
+      <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">장애 이슈</div>
       <div class="text-surface-500 dark:text-surface-300 text-lg">
         도구 카테고리를 선택하세요
       </div>
@@ -50,28 +50,28 @@ const toolCategories = [
   {
     id: 'cd-sem',
     name: 'CD-SEM',
-    description: 'CD-SEM SkewVoir',
+    description: 'CD-SEM 장애 이슈 관리',
     icon: 'pi pi-search',
     active: true
   },
   {
     id: 'hv-sem',
     name: 'HV-SEM',
-    description: 'HV-SEM SkewVoir',
+    description: 'HV-SEM 장애 이슈 관리',
     icon: 'pi pi-bolt',
     active: false
   },
   {
     id: 'verity',
     name: 'VeritySEM',
-    description: 'VeritySEM SkewVoir',
+    description: 'VeritySEM 장애 이슈 관리',
     icon: 'pi pi-verified',
     active: false
   },
   {
     id: 'provision',
     name: 'Provision',
-    description: 'Provision SkewVoir',
+    description: 'Provision 장애 이슈 관리',
     icon: 'pi pi-forward',
     active: false
   }
@@ -80,7 +80,7 @@ const toolCategories = [
 const navigateToTool = (toolId) => {
   const facId = route.params.fac_id || 'R3'
   router.push({
-    name: `skewvoir-${toolId}`,
+    name: `fail-issue-${toolId}`,
     params: { fac_id: facId }
   })
 }

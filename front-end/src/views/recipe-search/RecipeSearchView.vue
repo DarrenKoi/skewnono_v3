@@ -1,232 +1,190 @@
 <template>
   <div class="recipe-search bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
     <div class="flex flex-col items-start gap-2 mb-8">
-      <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Recipe 검색</div>
-      <div class="text-surface-500 dark:text-surface-300 text-lg">Recipe 정보를 검색하고 조회하세요</div>
+      <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">레시피 검색</div>
+      <div class="text-surface-500 dark:text-surface-300 text-lg">
+        도구 카테고리를 선택하세요
+      </div>
     </div>
-    
-    <!-- Selection Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-      <div
-        v-for="(option, index) in recipeOptions"
-        :key="index"
-        class="shadow-sm rounded-2xl p-4 cursor-pointer bg-surface-0 dark:bg-surface-900 border transition-all duration-200"
-        :class="selectedSearchType === index ? 'border-primary shadow-md' : 'border-transparent hover:border-primary hover:shadow-md'"
-        @click="selectSearchType(index)"
+
+    <!-- Tool Category Selection -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <Card 
+        v-for="tool in toolCategories" 
+        :key="tool.id"
+        :class="{
+          'cursor-pointer transition-all duration-200': tool.active,
+          'opacity-50 cursor-not-allowed': !tool.active,
+          'shadow-lg border-primary-500 border-2': tool.active && selectedTool === tool.id,
+          'hover:shadow-lg': tool.active && selectedTool !== tool.id
+        }"
+        @click="tool.active ? selectTool(tool.id) : null"
       >
-        <div class="flex items-center justify-center mb-4">
-          <i :class="option.icon" class="text-4xl text-primary"></i>
+        <template #content>
+          <div class="text-center p-4">
+            <i :class="[tool.icon, {
+              'text-primary-500': tool.active && selectedTool === tool.id,
+              'text-surface-600': tool.active && selectedTool !== tool.id,
+              'text-surface-400': !tool.active
+            }]" class="text-4xl mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2" :class="{
+              'text-primary-600 dark:text-primary-400': tool.active && selectedTool === tool.id,
+              'text-surface-900 dark:text-surface-0': tool.active && selectedTool !== tool.id,
+              'text-surface-500': !tool.active
+            }">{{ tool.name }}</h3>
+            <p class="text-surface-600 dark:text-surface-400 mb-2">{{ tool.description }}</p>
+            <div v-if="!tool.active" class="text-xs text-surface-500 italic">
+              Coming later
+            </div>
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    <!-- Recipe Search Content - Show below tool selection -->
+    <transition name="fade" mode="out-in">
+      <div v-if="selectedTool" class="mt-8">
+        <Divider />
+        
+        <!-- CD-SEM specific content -->
+        <div v-if="selectedTool === 'cd-sem'" class="mt-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-semibold text-surface-900 dark:text-surface-0">
+              CD-SEM 레시피 검색
+            </h2>
+            <Button 
+              label="선택 초기화" 
+              icon="pi pi-refresh" 
+              severity="secondary" 
+              size="small"
+              @click="resetSelection"
+            />
+          </div>
+
+          <!-- CD-SEM Recipe Search Content -->
+          <CdSemRecipeContent />
         </div>
-        <div class="p-2 flex flex-col items-center gap-3">
-          <div class="flex flex-col gap-2 w-full">
-            <div class="text-surface-900 dark:text-surface-0 text-lg font-semibold text-center">{{ option.title }}</div>
-            <div class="text-surface-500 dark:text-surface-300 text-sm leading-normal text-center" v-html="option.description" />
+
+        <!-- HV-SEM specific content -->
+        <div v-else-if="selectedTool === 'hv-sem'" class="mt-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-semibold text-surface-900 dark:text-surface-0">
+              HV-SEM 레시피 검색
+            </h2>
+            <Button 
+              label="선택 초기화" 
+              icon="pi pi-refresh" 
+              severity="secondary" 
+              size="small"
+              @click="resetSelection"
+            />
           </div>
-          <div class="flex gap-2">
-            <span v-for="(tag, tagIndex) in option.tags" :key="tagIndex" class="bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs rounded-lg">
-              {{ tag }}
-            </span>
+
+          <!-- HV-SEM Recipe Search Content -->
+          <HvSemRecipeContent />
+        </div>
+
+        <!-- Placeholder for other tools -->
+        <div v-else class="mt-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-semibold text-surface-900 dark:text-surface-0">
+              {{ getToolName(selectedTool) }} 레시피 검색
+            </h2>
+            <Button 
+              label="선택 초기화" 
+              icon="pi pi-refresh" 
+              severity="secondary" 
+              size="small"
+              @click="resetSelection"
+            />
           </div>
+          
+          <Message severity="info" :closable="false">
+            <p>{{ getToolName(selectedTool) }} 도구의 레시피 검색 기능은 준비 중입니다.</p>
+          </Message>
         </div>
       </div>
-    </div>
-    
-    <!-- Context-aware Search Bar -->
-    <div v-if="selectedSearchType !== null" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <div class="flex flex-col gap-6">
-        <!-- Recipe Search Input -->
-        <div class="flex flex-col gap-3">
-          <AutoComplete 
-            v-model="selectedRecipe" 
-            :suggestions="filteredRecipes"
-            :forceSelection="true"
-            @complete="searchRecipe"
-            :placeholder="getSearchPlaceholder()"
-            class="w-full"
-            :dropdown="true"
-            :minLength="1"
-          />
-          <small class="text-surface-500 dark:text-surface-400">
-            * {{ getSearchDescription() }}
-          </small>
-        </div>
-        
-        <!-- Additional Fields based on search type -->
-        <div v-if="selectedSearchType === 2 && selectedRecipe" class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">기간 선택</label>
-          <Calendar 
-            v-model="dateRange" 
-            selectionMode="range" 
-            :manualInput="false" 
-            dateFormat="yy/mm/dd"
-            placeholder="날짜 범위 선택"
-            showIcon
-            class="w-full sm:w-auto"
-          />
-        </div>
-        
-        <!-- Action Button -->
-        <div v-if="selectedSearchType !== null" class="flex pt-4">
-          <Button 
-            :label="getActionLabel()"
-            :icon="getActionIcon()"
-            @click="executeAction"
-            :disabled="!canExecuteAction"
-            class="w-full sm:w-auto"
-          />
-        </div>
-      </div>
-    </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
+import Card from 'primevue/card'
+import Divider from 'primevue/divider'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
+import CdSemRecipeContent from './cd-sem/CdSemRecipeContent.vue'
+import HvSemRecipeContent from './hv-sem/HvSemRecipeContent.vue'
 
-const router = useRouter()
+const route = useRoute()
 
-// Search-related reactive data
-const selectedSearchType = ref(null)
-const selectedRecipe = ref(null)
-const filteredRecipes = ref([])
-const dateRange = ref(null)
+// Get fac_id from route params
+const facId = computed(() => route.params.fac_id || 'R3')
 
-// Sample recipe data - replace with actual API call
-const recipeDatabase = [
-  'RECIPE_001_STANDARD',
-  'RECIPE_002_ADVANCED',
-  'RECIPE_003_CUSTOM',
-  'RECIPE_004_TEST',
-  'RECIPE_005_PRODUCTION',
-  'RECIPE_006_SPECIAL',
-  'RECIPE_007_MAINTENANCE',
-  'RECIPE_008_CALIBRATION',
-  'RECIPE_009_VALIDATION',
-  'RECIPE_010_EMERGENCY'
-]
+// Selected tool state
+const selectedTool = ref(null)
 
-// Recipe options configuration
-const recipeOptions = [
+const toolCategories = [
   {
-    title: 'Recipe 열기',
-    description: 'Recipe 설정 상태를<br>확인할 수 있습니다',
-    icon: 'pi pi-folder-open',
-    tags: ['설정', '확인'],
-    route: 'recipe-open'
+    id: 'cd-sem',
+    name: 'CD-SEM',
+    description: 'CD-SEM 레시피 검색',
+    icon: 'pi pi-search',
+    active: true
   },
   {
-    title: '횡전개 체크',
-    description: 'Recipe의 횡전개 여부와<br>Version을 체크할 수 있습니다',
-    icon: 'pi pi-check-circle',
-    tags: ['버전', '체크'],
-    route: 'recipe-horizontal-check'
+    id: 'hv-sem',
+    name: 'HV-SEM',
+    description: 'HV-SEM 레시피 검색',
+    icon: 'pi pi-bolt',
+    active: true
   },
   {
-    title: 'Meas. History',
-    description: '측정 기록을<br>확인할 수 있습니다',
-    icon: 'pi pi-chart-line',
-    tags: ['측정', '기록'],
-    route: 'recipe-measurement-history'
+    id: 'verity',
+    name: 'VeritySEM',
+    description: 'VeritySEM 레시피 검색',
+    icon: 'pi pi-verified',
+    active: false
+  },
+  {
+    id: 'provision',
+    name: 'Provision',
+    description: 'Provision 레시피 검색',
+    icon: 'pi pi-forward',
+    active: false
   }
 ]
 
-// Search type selection
-const selectSearchType = (index) => {
-  selectedSearchType.value = index
-  selectedRecipe.value = null
-  
-  // Set default date range for measurement history (1 month from today)
-  if (index === 2) {
-    const today = new Date()
-    const oneMonthAgo = new Date()
-    oneMonthAgo.setMonth(today.getMonth() - 1)
-    dateRange.value = [oneMonthAgo, today]
-  } else {
-    dateRange.value = null
-  }
+// Select a tool and show its content below
+const selectTool = (toolId) => {
+  selectedTool.value = toolId
 }
 
-// Recipe search functionality
-const searchRecipe = (event) => {
-  const query = event.query.toLowerCase()
-  filteredRecipes.value = recipeDatabase.filter(recipe => 
-    recipe.toLowerCase().includes(query)
-  )
+// Reset selection
+const resetSelection = () => {
+  selectedTool.value = null
 }
 
-// Get search placeholder based on selected type
-const getSearchPlaceholder = () => {
-  if (selectedSearchType.value === null) return ''
-  const placeholders = {
-    0: 'Recipe 이름을 입력하세요...',
-    1: '횡전개 체크할 Recipe를 입력하세요...',
-    2: '측정 기록을 조회할 Recipe를 입력하세요...'
-  }
-  return placeholders[selectedSearchType.value] || 'Recipe 이름을 입력하세요...'
+// Get tool name by ID
+const getToolName = (toolId) => {
+  const tool = toolCategories.find(t => t.id === toolId)
+  return tool ? tool.name : ''
 }
-
-// Get search description based on selected type
-const getSearchDescription = () => {
-  if (selectedSearchType.value === null) return ''
-  const descriptions = {
-    0: 'Recipe를 검색하고 선택하여 설정 상태를 확인하세요',
-    1: 'Recipe를 검색하고 선택하여 횡전개 여부와 버전을 체크하세요',
-    2: 'Recipe를 검색하고 선택한 후 기간을 설정하여 측정 기록을 조회하세요'
-  }
-  return descriptions[selectedSearchType.value] || ''
-}
-
-// Get action label based on selected type
-const getActionLabel = () => {
-  if (selectedSearchType.value === null) return ''
-  const labels = {
-    0: 'Recipe 열기',
-    1: '횡전개 체크 실행',
-    2: '측정 기록 조회'
-  }
-  return labels[selectedSearchType.value] || ''
-}
-
-// Get action icon based on selected type
-const getActionIcon = () => {
-  if (selectedSearchType.value === null) return ''
-  const icons = {
-    0: 'pi pi-external-link',
-    1: 'pi pi-check-square',
-    2: 'pi pi-history'
-  }
-  return icons[selectedSearchType.value] || ''
-}
-
-// Check if action can be executed
-const canExecuteAction = computed(() => {
-  if (selectedSearchType.value === null || !selectedRecipe.value) return false
-  if (selectedSearchType.value === 2) {
-    return dateRange.value && dateRange.value.length === 2
-  }
-  return true
-})
-
-// Execute action by navigating to sub-route
-const executeAction = () => {
-  if (!canExecuteAction.value) return
-  
-  const option = recipeOptions[selectedSearchType.value]
-  if (option.route) {
-    // Store the selected recipe and date range in sessionStorage for the target page
-    sessionStorage.setItem('selectedRecipe', selectedRecipe.value)
-    if (dateRange.value) {
-      sessionStorage.setItem('dateRange', JSON.stringify(dateRange.value))
-    }
-    
-    // Navigate to the sub-route
-    router.push({ name: option.route })
-  }
-}
-
 </script>
 
 <style scoped>
+/* Transition animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* Page-specific styles if needed */
 </style>

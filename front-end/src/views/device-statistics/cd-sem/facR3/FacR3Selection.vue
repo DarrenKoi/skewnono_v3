@@ -235,10 +235,10 @@ const selectView = (view) => {
   // Navigate to R3-specific sub-routes
   if (view === 'current') {
     console.log('Navigating to current status')
-    router.push('/R3/device-statistics/current-status')
+    router.push('/R3/device-statistics/cd-sem/current-status')
   } else if (view === 'trend') {
     console.log('Navigating to weekly trend')
-    router.push('/R3/device-statistics/weekly-trend')
+    router.push('/R3/device-statistics/cd-sem/weekly-trend')
   }
 }
 

@@ -14,12 +14,13 @@ def is_development_environment():
     Check if we're in development environment
     Returns True if running in development mode
     """
-    # Check environment variable override
-    env_override = os.environ.get('AUTH_MODE')
-    if env_override == 'bypass':
-        return True
-    elif env_override == 'enforce':
-        return False
+    # Check if DATA_SOURCE_MODE is set to dummy and request is from localhost
+    data_source_mode = os.environ.get('DATA_SOURCE_MODE')
+    if data_source_mode == 'dummy':
+        # Check if request is from localhost/127.0.0.1
+        remote_addr = request.environ.get('REMOTE_ADDR', '')
+        if remote_addr in ['127.0.0.1', 'localhost', '::1']:
+            return True
     
     # Check if running in development mode based on platform
     node_name = platform.node().upper()

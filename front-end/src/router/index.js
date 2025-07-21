@@ -19,12 +19,6 @@ const router = createRouter({
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/general/AboutView.vue'),
     },
-    {
-      path: '/:fac_id/skewvoir',
-      name: 'skewvoir',
-      component: () => import('../views/SkewVoir/SkewVoirView.vue'),
-      meta: { requiresFab: true },
-    },
     // Routes with fac_id parameter
     {
       path: '/:fac_id',
@@ -32,6 +26,38 @@ const router = createRouter({
       component: MainView,
       meta: { requiresFab: true },
     },
+    // SkewVoir routes
+    {
+      path: '/:fac_id/skewvoir',
+      name: 'skewvoir',
+      component: () => import('../views/SkewVoir/SkewVoirView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/skewvoir/cd-sem',
+      name: 'skewvoir-cd-sem',
+      component: () => import('../views/SkewVoir/cd-sem/CdSemSkewVoirView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/skewvoir/hv-sem',
+      name: 'skewvoir-hv-sem',
+      component: () => import('../views/SkewVoir/hv-sem/HvSemSkewVoirView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/skewvoir/verity',
+      name: 'skewvoir-verity',
+      component: () => import('../views/SkewVoir/verity/VeritySkewVoirView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/skewvoir/provision',
+      name: 'skewvoir-provision',
+      component: () => import('../views/SkewVoir/provision/ProvisionSkewVoirView.vue'),
+      meta: { requiresFab: true },
+    },
+    // Equipment Status routes
     {
       path: '/:fac_id/equipment-status',
       name: 'equipment-status',
@@ -56,6 +82,7 @@ const router = createRouter({
       component: () => import('../views/equipment-status/NotAvailableView.vue'),
       meta: { requiresFab: true },
     },
+    // Recipe Search routes
     {
       path: '/:fac_id/recipe-search',
       name: 'recipe-search',
@@ -63,23 +90,48 @@ const router = createRouter({
       meta: { requiresFab: true },
     },
     {
-      path: '/:fac_id/recipe-search/open',
+      path: '/:fac_id/recipe-search/cd-sem',
+      name: 'recipe-search-cd-sem',
+      component: () => import('../views/recipe-search/cd-sem/CdSemRecipeSearchView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/recipe-search/hv-sem',
+      name: 'recipe-search-hv-sem',
+      component: () => import('../views/recipe-search/hv-sem/HvSemRecipeSearchView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/recipe-search/verity',
+      name: 'recipe-search-verity',
+      component: () => import('../views/recipe-search/verity/VerityRecipeSearchView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/recipe-search/provision',
+      name: 'recipe-search-provision',
+      component: () => import('../views/recipe-search/provision/ProvisionRecipeSearchView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/recipe-search/cd-sem/open',
       name: 'recipe-open',
-      component: () => import('../views/recipe-search/RecipeOpenView.vue'),
+      component: () => import('../views/recipe-search/cd-sem/RecipeOpenView.vue'),
       meta: { requiresFab: true },
     },
     {
-      path: '/:fac_id/recipe-search/horizontal-check',
+      path: '/:fac_id/recipe-search/cd-sem/horizontal-check',
       name: 'recipe-horizontal-check',
-      component: () => import('../views/recipe-search/RecipeHorizontalCheckView.vue'),
+      component: () => import('../views/recipe-search/cd-sem/RecipeHorizontalCheckView.vue'),
       meta: { requiresFab: true },
     },
     {
-      path: '/:fac_id/recipe-search/measurement-history',
+      path: '/:fac_id/recipe-search/cd-sem/measurement-history',
       name: 'recipe-measurement-history',
-      component: () => import('../views/recipe-search/RecipeMeasurementHistoryView.vue'),
+      component: () => import('../views/recipe-search/cd-sem/RecipeMeasurementHistoryView.vue'),
       meta: { requiresFab: true },
     },
+    // Device Statistics routes
     {
       path: '/:fac_id/device-statistics',
       name: 'device-statistics',
@@ -87,25 +139,99 @@ const router = createRouter({
       meta: { requiresFab: true },
     },
     {
-      path: '/R3/device-statistics/current-status',
-      name: 'device-statistics-current-status-r3',
-      component: () => import('../views/device-statistics/facR3/CurrentStatusView.vue'),
-    },
-    {
-      path: '/R3/device-statistics/weekly-trend',
-      name: 'device-statistics-weekly-trend-r3',
-      component: () => import('../views/device-statistics/facR3/WeeklyTrendView.vue'),
-    },
-    {
-      path: '/:fac_id/fail-issue',
-      name: 'fail-issue',
-      component: () => import('../views/FailIssueView.vue'),
+      path: '/:fac_id/device-statistics/cd-sem',
+      name: 'device-statistics-cd-sem',
+      component: () => import('../views/device-statistics/cd-sem/CdSemDeviceStatisticsView.vue'),
       meta: { requiresFab: true },
     },
     {
+      path: '/:fac_id/device-statistics/hv-sem',
+      name: 'device-statistics-hv-sem',
+      component: () => import('../views/device-statistics/hv-sem/HvSemDeviceStatisticsView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/device-statistics/verity',
+      name: 'device-statistics-verity',
+      component: () => import('../views/device-statistics/verity/VerityDeviceStatisticsView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/device-statistics/provision',
+      name: 'device-statistics-provision',
+      component: () => import('../views/device-statistics/provision/ProvisionDeviceStatisticsView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/R3/device-statistics/cd-sem/current-status',
+      name: 'device-statistics-current-status-r3',
+      component: () => import('../views/device-statistics/cd-sem/facR3/CurrentStatusView.vue'),
+    },
+    {
+      path: '/R3/device-statistics/cd-sem/weekly-trend',
+      name: 'device-statistics-weekly-trend-r3',
+      component: () => import('../views/device-statistics/cd-sem/facR3/WeeklyTrendView.vue'),
+    },
+    // Fail Issue routes
+    {
+      path: '/:fac_id/fail-issue',
+      name: 'fail-issue',
+      component: () => import('../views/fail-issue/FailIssueView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/fail-issue/cd-sem',
+      name: 'fail-issue-cd-sem',
+      component: () => import('../views/fail-issue/cd-sem/CdSemFailIssueView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/fail-issue/hv-sem',
+      name: 'fail-issue-hv-sem',
+      component: () => import('../views/fail-issue/hv-sem/HvSemFailIssueView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/fail-issue/verity',
+      name: 'fail-issue-verity',
+      component: () => import('../views/fail-issue/verity/VerityFailIssueView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/fail-issue/provision',
+      name: 'fail-issue-provision',
+      component: () => import('../views/fail-issue/provision/ProvisionFailIssueView.vue'),
+      meta: { requiresFab: true },
+    },
+    // Hardware Management routes
+    {
       path: '/:fac_id/hardware-management',
       name: 'hardware-management',
-      component: () => import('../views/HardwareManagementView.vue'),
+      component: () => import('../views/hardware-management/HardwareManagementView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/hardware-management/cd-sem',
+      name: 'hardware-management-cd-sem',
+      component: () => import('../views/hardware-management/cd-sem/CdSemHardwareManagementView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/hardware-management/hv-sem',
+      name: 'hardware-management-hv-sem',
+      component: () => import('../views/hardware-management/hv-sem/HvSemHardwareManagementView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/hardware-management/verity',
+      name: 'hardware-management-verity',
+      component: () => import('../views/hardware-management/verity/VerityHardwareManagementView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/hardware-management/provision',
+      name: 'hardware-management-provision',
+      component: () => import('../views/hardware-management/provision/ProvisionHardwareManagementView.vue'),
       meta: { requiresFab: true },
     },
   ],

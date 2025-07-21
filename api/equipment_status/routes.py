@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-import platform
+import os
 from utils.auth import require_access
 
 # Create blueprint
@@ -7,14 +7,13 @@ equipment_status_bp = Blueprint('equipment_status', __name__, url_prefix='/equip
 
 # Environment detection - determine which data source to use
 def get_data_source():
-    """Determine data source based on platform node name"""
-    node_name = platform.node().upper()
-    if node_name.startswith('DESKTOP'):
-        return 'dummy'  # Home environment
-    elif node_name.startswith('PC') or 'SKEWNONO' in node_name:
-        return 'real'   # Work/production environment
-    else:
-        return 'dummy'  # Default to dummy for unknown environments
+    """Determine data source based on DATA_SOURCE_MODE environment variable"""
+    env_mode = os.environ.get('DATA_SOURCE_MODE')
+    if env_mode in ['dummy', 'real']:
+        return env_mode
+    
+    # Default to dummy if no environment variable is set
+    return 'dummy'
 
 # Import appropriate data modules based on environment
 data_source = get_data_source()
