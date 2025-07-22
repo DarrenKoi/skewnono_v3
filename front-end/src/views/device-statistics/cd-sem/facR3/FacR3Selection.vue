@@ -42,8 +42,7 @@
           <div class="flex gap-2 mb-4">
             <Button label="Select All" size="small"
               @click="selectAllProdIds(currentEditingCategory, currentEditingDevice.prod_ids)" />
-            <Button label="Clear All" size="small" severity="secondary"
-              @click="clearProdIds(currentEditingCategory)" />
+            <Button label="Clear All" size="small" severity="secondary" @click="clearProdIds(currentEditingCategory)" />
             <div class="ml-auto text-sm text-surface-600 dark:text-surface-400 flex items-center">
               Selected: {{ selectedProdIdsByCategory[currentEditingCategory]?.length || 0 }} / {{
                 currentEditingDevice.prod_ids.length }}
@@ -114,6 +113,11 @@ const props = defineProps({
   }
 })
 
+// Log initial mount
+onMounted(() => {
+  console.log('[FacR3Selection] Component mounted with facId:', props.facId)
+})
+
 const emit = defineEmits(['selectionChanged', 'dataFetched'])
 
 const router = useRouter()
@@ -132,13 +136,60 @@ const currentEditingDevice = ref(null)
 // View state
 const currentView = ref(null) // 'current' or 'trend'
 
-// Use vue-query for device options
-const { data: deviceOptionsData, isLoading: optionsLoading } = useQuery(
-  deviceStatisticsQueries.deviceOptions(props.facId)
+// Use vue-query to fetch all device data at once
+const { data: allDeviceData, isLoading: dataLoading, error: dataError } = useQuery(
+  deviceStatisticsQueries.allDeviceData()
 )
 
-// Computed property for devices data
-const r3DevicesData = computed(() => deviceOptionsData.value?.devices || null)
+// Add error handling
+watch(dataError, (error) => {
+  if (error) {
+    console.error('[FacR3Selection] Error fetching data:', error)
+  }
+})
+
+// Watch for data changes and log
+watch(allDeviceData, (newData) => {
+  if (newData) {
+    console.log('[FacR3Selection] All device data received:', {
+      hasData: !!newData,
+      keys: Object.keys(newData),
+      workingDevicesCount: newData.working_devices ? Object.keys(newData.working_devices).length : 0,
+      deviceOptions: newData.device_options,
+      dateCount: Object.keys(newData).filter(key => key.match(/^\d{4}-\d{2}-\d{2}$/)).length
+    })
+  }
+}, { immediate: true })
+
+// Computed property for devices data from the all-in-one response
+const r3DevicesData = computed(() => {
+  if (!allDeviceData.value?.device_options?.devices) {
+    console.log('[FacR3Selection] No device options found in data')
+    return null
+  }
+  console.log('[FacR3Selection] Device options extracted:', allDeviceData.value.device_options.devices)
+  return allDeviceData.value.device_options.devices
+})
+
+// Computed property for the full statistics data
+const fullStatisticsData = computed(() => {
+  if (!allDeviceData.value) return null
+
+  // Extract date-based data
+  const dateKeys = Object.keys(allDeviceData.value).filter(key => key.match(/^\d{4}-\d{2}-\d{2}$/))
+  const weeklyData = {}
+
+  dateKeys.forEach(date => {
+    weeklyData[date] = allDeviceData.value[date]
+  })
+
+  return {
+    working_devices: allDeviceData.value.working_devices,
+    device_options: allDeviceData.value.device_options,
+    weekly_data: weeklyData,
+    dateKeys: dateKeys.sort()
+  }
+})
 
 // Computed property to check if we have valid prod_id selections
 const hasValidSelection = computed(() => {
@@ -220,17 +271,23 @@ const selectView = (view) => {
   console.log('hasValidSelection:', hasValidSelection.value)
   console.log('selectedR3Options:', selectedR3Options.value)
   console.log('selectedProdIdsByCategory:', selectedProdIdsByCategory.value)
-  
+
   // Check if we have valid selections before navigating
   if (!hasValidSelection.value) {
     console.warn('No valid selections found, not navigating')
     return
   }
-  
-  // Store current selections in session storage
+
+  // Store current selections and filtered data in session storage
   sessionStorage.setItem('deviceStatistics_selectedR3Options', JSON.stringify(selectedR3Options.value))
   sessionStorage.setItem('deviceStatistics_selectedProdIds', JSON.stringify(selectedProdIdsByCategory.value))
   sessionStorage.setItem('deviceStatistics_facId', props.facId)
+
+  // Store the filtered statistics data for use in sub-routes
+  if (statisticsData.value) {
+    sessionStorage.setItem('deviceStatistics_filteredData', JSON.stringify(statisticsData.value))
+    console.log('[FacR3Selection] Stored filtered data in session storage')
+  }
 
   // Navigate to R3-specific sub-routes
   if (view === 'current') {
@@ -246,124 +303,87 @@ const selectView = (view) => {
 watch(r3DevicesData, (newData) => {
   if (newData) {
     r3Options.value = newData.map(d => d.category)
+    console.log('[FacR3Selection] R3 options updated:', r3Options.value)
   }
 }, { immediate: true })
 
-// Computed selections for vue-query
-const selections = computed(() => {
-  return selectedR3Options.value
-    .filter(option => selectedProdIdsByCategory.value[option]?.length > 0)
-    .map(option => ({
-      option,
-      prodIds: selectedProdIdsByCategory.value[option]
-    }))
-})
+// Computed filtered data based on selections
+const filteredStatisticsData = computed(() => {
+  if (!fullStatisticsData.value || !hasValidSelection.value) return null
 
-// Use vue-query for device data fetching
-const { data: deviceData, isLoading: dataLoading } = useQuery(
-  deviceStatisticsQueries.multipleDeviceData(props.facId, selections.value)
-)
+  console.log('[FacR3Selection] Filtering data for selections:', {
+    selectedCategories: selectedR3Options.value,
+    selectedProdIds: selectedProdIdsByCategory.value
+  })
 
-// Process and combine data from vue-query
-const processDeviceData = (responses) => {
-  if (!responses || responses.length === 0) return null
+  // Get all selected prod_ids
+  const selectedProdIds = new Set()
+  selectedR3Options.value.forEach(category => {
+    const prodIds = selectedProdIdsByCategory.value[category] || []
+    prodIds.forEach(id => selectedProdIds.add(id))
+  })
 
-  console.log('=== R3 Data Responses ===', responses)
+  // Filter the weekly data based on selected prod_ids
+  const filteredWeeklyData = {}
 
-  // Combine data from all selected options
-  const combinedData = {
-    data: [],
-    totalCount: 0,
-    activeCount: 0,
-    warningCount: 0,
-    errorCount: 0,
-    weeklyData: {},
-    devices: []
-  }
-
-  responses.forEach((response, index) => {
-    console.log(`Processing response ${index}:`, {
-      hasWeeklyData: !!response.weekly_data,
-      weekCount: response.weekly_data ? Object.keys(response.weekly_data).length : 0,
-      devices: response.devices
-    })
-
-    // Handle new weekly data structure
-    if (response.weekly_data) {
-      // Store devices info
-      if (response.devices && combinedData.devices.length === 0) {
-        combinedData.devices = response.devices
-      }
-
-      // Process weekly data
-      Object.entries(response.weekly_data).forEach(([weekDate, weekData]) => {
-        if (!combinedData.weeklyData[weekDate]) {
-          combinedData.weeklyData[weekDate] = {
-            rcp_info: {
-              all_rcp_info: [],
-              only_normal_rcp_info: [],
-              mother_normal_rcp_info: [],
-              only_sample_rcp_info: []
-            },
-            summary: [],
-            all_recipe_list: []
-          }
-        }
-
-        // Combine rcp_info data
-        if (weekData.rcp_info) {
-          Object.keys(weekData.rcp_info).forEach(key => {
-            if (weekData.rcp_info[key]) {
-              combinedData.weeklyData[weekDate].rcp_info[key].push(...weekData.rcp_info[key])
-            }
-          })
-        }
-
-        // Combine summary data
-        if (weekData.summary) {
-          combinedData.weeklyData[weekDate].summary.push(...weekData.summary)
-        }
-
-        // Combine all_recipe_list
-        if (weekData.all_recipe_list) {
-          combinedData.weeklyData[weekDate].all_recipe_list.push(...weekData.all_recipe_list)
-        }
-      })
-
-      // Get the most recent week's data for display
-      const sortedWeeks = Object.keys(response.weekly_data).sort().reverse()
-      if (sortedWeeks.length > 0) {
-        const latestWeek = response.weekly_data[sortedWeeks[0]]
-        if (latestWeek.rcp_info && latestWeek.rcp_info.all_rcp_info) {
-          combinedData.data.push(...latestWeek.rcp_info.all_rcp_info)
-        }
-      }
-    } else if (response.data) {
-      // Fallback to old structure
-      combinedData.data.push(...response.data)
+  Object.entries(fullStatisticsData.value.weekly_data).forEach(([date, dateData]) => {
+    filteredWeeklyData[date] = {
+      all_rcp_info: dateData.all_rcp_info?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      only_normal_rcp_info: dateData.only_normal_rcp_info?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      mother_normal_rcp_info: dateData.mother_normal_rcp_info?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      only_sample_rcp_info: dateData.only_sample_rcp_info?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      all_summary: dateData.all_summary?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      only_normal_summary: dateData.only_normal_summary?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      mother_normal_summary: dateData.mother_normal_summary?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      only_sample_summary: dateData.only_sample_summary?.filter(item => selectedProdIds.has(item.prod_id)) || [],
+      all_recipe_list: dateData.all_recipe_list?.filter(item => selectedProdIds.has(item.prod_id)) || []
     }
   })
 
-  // Calculate statistics from combined data
-  combinedData.totalCount = combinedData.data.length
-  combinedData.activeCount = combinedData.data.filter(item => item.skip_yn === 'No').length
-  combinedData.warningCount = combinedData.data.filter(item => item.para_all < 600).length
-  combinedData.errorCount = combinedData.data.filter(item => item.skip_yn === 'Yes').length
+  return {
+    working_devices: fullStatisticsData.value.working_devices,
+    device_options: fullStatisticsData.value.device_options,
+    weekly_data: filteredWeeklyData,
+    selectedProdIds: Array.from(selectedProdIds)
+  }
+})
 
-  console.log('=== Combined Data Structure ===', {
-    totalCount: combinedData.totalCount,
-    weeklyDataKeys: Object.keys(combinedData.weeklyData),
-    firstWeekData: combinedData.weeklyData[Object.keys(combinedData.weeklyData)[0]],
-    devices: combinedData.devices
+// Process filtered data for statistics
+const processFilteredData = () => {
+  if (!filteredStatisticsData.value) return null
+
+  const dateKeys = Object.keys(filteredStatisticsData.value.weekly_data).sort().reverse()
+  if (dateKeys.length === 0) return null
+
+  // Get the most recent week's data for statistics
+  const latestDate = dateKeys[0]
+  const latestData = filteredStatisticsData.value.weekly_data[latestDate]
+
+  const stats = {
+    data: latestData.all_rcp_info || [],
+    totalCount: latestData.all_rcp_info?.length || 0,
+    activeCount: latestData.all_rcp_info?.filter(item => item.skip_yn === 'No').length || 0,
+    warningCount: latestData.all_rcp_info?.filter(item => item.para_all < 600).length || 0,
+    errorCount: latestData.all_rcp_info?.filter(item => item.skip_yn === 'Yes').length || 0,
+    weeklyData: filteredStatisticsData.value.weekly_data,
+    working_devices: filteredStatisticsData.value.working_devices,
+    device_options: filteredStatisticsData.value.device_options
+  }
+
+  console.log('[FacR3Selection] Processed statistics:', {
+    latestDate,
+    totalCount: stats.totalCount,
+    weekCount: dateKeys.length,
+    selectedProdIds: filteredStatisticsData.value.selectedProdIds
   })
 
-  return combinedData
+  return stats
 }
 
-// Watch for device data changes and process
-watch(deviceData, (newData) => {
+// Update statistics when filtered data changes
+watch(filteredStatisticsData, (newData) => {
   if (newData) {
-    statisticsData.value = processDeviceData(newData)
+    statisticsData.value = processFilteredData()
     emit('dataFetched', statisticsData.value)
   }
 }, { immediate: true })

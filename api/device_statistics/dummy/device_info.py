@@ -17,9 +17,18 @@ def generate_dummy_row(row_id):
     """
     # --- Define possible values for columns ---
 
-    # Select from 10 predefined 4-letter product IDs
-    prod_ids = ['PROA', 'PROB', 'PROC', 'PROD', 'PROE',
-                'PROF', 'PROG', 'PROH', 'PROI', 'PROJ']
+    # Select from 40 predefined 4-letter product IDs
+    prod_ids = [
+        # DRAM products (15)
+        'PROA', 'PROB', 'PROC', 'PROK', 'PROL', 'PROM', 'PRON', 'PROO', 
+        'PROP', 'PROQ', 'PROR', 'PROS', 'PROT', 'PROU', 'PROV',
+        # NAND products (15)
+        'PROD', 'PROE', 'PROF', 'PROG', 'PROW', 'PROX', 'PROY', 'PROZ',
+        'PR1A', 'PR1B', 'PR1C', 'PR1D', 'PR1E', 'PR1F', 'PR1G',
+        # NM products (10)
+        'PROH', 'PROI', 'PROJ', 'PR2A', 'PR2B', 'PR2C', 'PR2D', 'PR2E', 
+        'PR2F', 'PR2G'
+    ]
 
     # Sample operation descriptions
     oper_descriptions = [
@@ -213,15 +222,24 @@ def get_r3_options():
         "devices": [
             {
                 "category": "DRAM",
-                "prod_ids": ['PROA', 'PROB', 'PROC']
+                "prod_ids": [
+                    'PROA', 'PROB', 'PROC', 'PROK', 'PROL', 'PROM', 'PRON', 'PROO',
+                    'PROP', 'PROQ', 'PROR', 'PROS', 'PROT', 'PROU', 'PROV'
+                ]
             },
             {
                 "category": "NAND", 
-                "prod_ids": ['PROD', 'PROE', 'PROF', 'PROG']
+                "prod_ids": [
+                    'PROD', 'PROE', 'PROF', 'PROG', 'PROW', 'PROX', 'PROY', 'PROZ',
+                    'PR1A', 'PR1B', 'PR1C', 'PR1D', 'PR1E', 'PR1F', 'PR1G'
+                ]
             },
             {
                 "category": "NM",
-                "prod_ids": ['PROH', 'PROI', 'PROJ']
+                "prod_ids": [
+                    'PROH', 'PROI', 'PROJ', 'PR2A', 'PR2B', 'PR2C', 'PR2D', 'PR2E',
+                    'PR2F', 'PR2G'
+                ]
             }
         ]
     }
@@ -322,19 +340,23 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
         num_rows (int): Number of rows to generate
         
     Returns:
-        dict: Recipe info data categorized by type
+        dict: Recipe info data categorized by type, including recipe_ids for matching
     """
     rcp_info = {
         "all_rcp_info": [],
         "only_normal_rcp_info": [],
         "mother_normal_rcp_info": [],
-        "only_sample_rcp_info": []
+        "only_sample_rcp_info": [],
+        "all_recipe_ids": []  # Track all recipe IDs for use in all_recipe_list
     }
     
     # Generate rows for each category
     for i in range(num_rows):
         row = generate_dummy_row(i)
         row['prod_id'] = random.choice(prod_ids)
+        
+        # Collect all recipe IDs
+        rcp_info["all_recipe_ids"].append(row['recipe_id'])
         
         # Distribute across different categories
         if i % 4 == 0:
@@ -455,39 +477,50 @@ def generate_summary_data(prod_ids):
     return summary_data
 
 
-def generate_all_recipe_list(prod_ids, num_recipes=30):
+def generate_all_recipe_list(prod_ids, recipe_ids=None):
     """
-    Generates a list of all recipes for given product IDs.
+    Generates a flattened list of recipe parameters that can be converted to DataFrame.
     
     Args:
         prod_ids (list): List of product IDs
-        num_recipes (int): Number of recipes to generate
+        recipe_ids (list): Optional list of specific recipe IDs to use (for matching with rcp_info)
         
     Returns:
-        list: List of all recipes with their parameters
+        list: List of parameter dictionaries with columns:
+              ["Parameter", "Mother_Para", "Meas_Counting", "prod_id", "recipe_id", "modified", "category"]
     """
-    all_recipes = []
-    for i in range(num_recipes):
-        prod_id = random.choice(prod_ids)
-        recipe_id = f"RCP-{prod_id}-{500 + i}"
+    all_parameters = []
+    
+    # If no recipe_ids provided, generate some default ones
+    if recipe_ids is None:
+        recipe_ids = []
+        for i in range(30):
+            prod_id = random.choice(prod_ids)
+            recipe_ids.append(f"RCP-{prod_id}-{500 + i}")
+    
+    # For each recipe, generate parameters
+    for recipe_id in recipe_ids:
+        # Extract prod_id from recipe_id (format: RCP-{prod_id}-{number})
+        # Handle cases where prod_id might contain dashes
+        parts = recipe_id.split('-')
+        if len(parts) >= 3:
+            prod_id = parts[1]  # Standard format: RCP-PROA-500
+        else:
+            # Fallback: use a random prod_id from the list
+            prod_id = random.choice(prod_ids)
+        
+        # For the dummy data, ensure prod_id is valid
+        # In real data, prod_id should match the recipe's actual product
+        if prod_id not in prod_ids and prod_ids:
+            prod_id = random.choice(prod_ids)
         
         # Generate 5-10 parameters per recipe
         num_params = random.randint(5, 10)
-        parameters = []
         for j in range(num_params):
-            parameters.append(generate_recipe_parameter(prod_id, recipe_id, j))
-        
-        recipe_data = {
-            "recipe_id": recipe_id,
-            "prod_id": prod_id,
-            "parameters": parameters,
-            "total_parameters": num_params,
-            "mother_parameters": sum(1 for p in parameters if p.get("Mother_Para", False)),
-            "modified_count": sum(1 for p in parameters if p.get("modified", False))
-        }
-        all_recipes.append(recipe_data)
+            param = generate_recipe_parameter(prod_id, recipe_id, j)
+            all_parameters.append(param)
     
-    return all_recipes
+    return all_parameters
 
 
 def generate_weekly_data(category_data, num_weeks=8):
@@ -516,11 +549,15 @@ def generate_weekly_data(category_data, num_weeks=8):
         date_key = week_monday.strftime("%Y-%m-%d")
         
         # Generate data for this week
+        rcp_info = generate_recipe_info_data(category_data["prod_ids"])
+        # Extract recipe IDs for matching
+        recipe_ids = rcp_info.get("all_recipe_ids", [])
+        
         weekly_data[date_key] = {
-            "rcp_info": generate_recipe_info_data(category_data["prod_ids"]),
+            "rcp_info": rcp_info,
             "summary": generate_summary_data(category_data["prod_ids"]),
             "summary_by_category": generate_summary_data_by_category(category_data["prod_ids"]),
-            "all_recipe_list": generate_all_recipe_list(category_data["prod_ids"]),
+            "all_recipe_list": generate_all_recipe_list(category_data["prod_ids"], recipe_ids),
             "week_number": week + 1,
             "category": category_data["category"]
         }
@@ -553,6 +590,28 @@ def get_all_data():
     }
     
     return generate_weekly_data(combined_category)
+
+
+def get_working_devices_mapping():
+    """
+    Returns mapping of prod_id to prod_catg_cd2 (device category).
+    
+    Returns:
+        dict: Dictionary with prod_id as keys and prod_catg_cd2 as values
+    """
+    options = get_r3_options()
+    working_devices = {}
+    
+    # Map each prod_id to its category
+    for device in options["devices"]:
+        category = device["category"]
+        for prod_id in device["prod_ids"]:
+            working_devices[prod_id] = {
+                "prod_id": prod_id,
+                "prod_catg_cd2": category
+            }
+    
+    return working_devices
 
 
 
