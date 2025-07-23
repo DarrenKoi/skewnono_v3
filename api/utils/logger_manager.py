@@ -104,8 +104,8 @@ class LoggerManager:
         # Console output
         if self.is_dev or self.colorize or not self.is_prod:
             console_format = self.custom_format or (
-                "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-                "<level>{level: <8}</level> | "
+                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                "<level>{level:<5}</level> | "
                 "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
                 "<level>{message}</level>"
             )
@@ -128,7 +128,7 @@ class LoggerManager:
         if self.json_format:
             log_format = self._json_formatter
         else:
-            log_format = self.custom_format or "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}"
+            log_format = self.custom_format or "{time:YYYY-MM-DD HH:mm:ss} | {level:<5} | {name}:{function}:{line} - {message}"
 
         # Add file handler
         handler_id = logger.add(
@@ -374,7 +374,7 @@ class LogConfigs:
     @staticmethod
     def development():
         """Development configuration with verbose logging."""
-        return LogManager(
+        return LoggerManager(
             log_name="app_dev",
             log_file_path="logs/dev.log",
             level="DEBUG",
@@ -389,7 +389,7 @@ class LogConfigs:
     @staticmethod
     def production():
         """Production configuration with JSON formatting."""
-        return LogManager(
+        return LoggerManager(
             log_name="app_prod",
             log_file_path="logs/prod.log",
             level="INFO",
@@ -404,7 +404,7 @@ class LogConfigs:
     @staticmethod
     def testing():
         """Testing configuration with full debug info."""
-        return LogManager(
+        return LoggerManager(
             log_name="app_test",
             log_file_path="logs/test.log",
             level="DEBUG",
@@ -418,7 +418,7 @@ class LogConfigs:
     @staticmethod
     def minimal():
         """Minimal configuration for scripts and small apps."""
-        return LogManager(
+        return LoggerManager(
             log_file_path="app.log",
             level="INFO",
             retention="7 days",
@@ -431,7 +431,7 @@ class LogConfigs:
 # Example usage
 if __name__ == "__main__":
     # Basic usage with context manager
-    with LogManager(mode="dev", enable_print_redirect=True) as log_manager:
+    with LoggerManager(mode="dev", enable_print_redirect=True) as log_manager:
         log = log_manager.get_logger()
 
         # Basic logging

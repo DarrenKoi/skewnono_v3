@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from datetime import datetime
-from utils.redis_client import redis_client
+from .utils.redis_client import redis_client
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 

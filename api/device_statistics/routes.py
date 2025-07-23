@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 import os
 import pandas as pd
-from utils.auth import require_access
+from ..utils.auth import require_access
 
 # Create the blueprint
 device_statistics_bp = Blueprint('device_statistics', __name__)
@@ -19,9 +19,9 @@ def get_data_source():
 # Import appropriate data modules based on environment
 data_source = get_data_source()
 if data_source == 'real':
-    from api.device_statistics.real import device_info
+    from .real import device_info
 else:
-    from api.device_statistics.dummy import device_info
+    from .dummy import device_info
 
 print(f"[DEBUG] Using data source: {data_source}")
 

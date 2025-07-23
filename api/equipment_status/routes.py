@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 import os
-from utils.auth import require_access
+from ..utils.auth import require_access
 
 # Create blueprint
 equipment_status_bp = Blueprint('equipment_status', __name__, url_prefix='/equipment-status')
