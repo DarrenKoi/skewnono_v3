@@ -334,10 +334,11 @@ def get_device_data(device_name):
 def generate_recipe_info_data(prod_ids, num_rows=50):
     """
     Generates recipe info data for given product IDs.
+    Each category gets data for ALL product IDs to match summary data structure.
     
     Args:
         prod_ids (list): List of product IDs to use
-        num_rows (int): Number of rows to generate
+        num_rows (int): Number of rows to generate per category (not used, kept for compatibility)
         
     Returns:
         dict: Recipe info data categorized by type, including recipe_ids for matching
@@ -350,23 +351,40 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
         "all_recipe_ids": []  # Track all recipe IDs for use in all_recipe_list
     }
     
-    # Generate rows for each category
-    for i in range(num_rows):
-        row = generate_dummy_row(i)
-        row['prod_id'] = random.choice(prod_ids)
-        
-        # Collect all recipe IDs
+    # Generate data for each category - each category gets ALL product IDs
+    row_id = 0
+    
+    # Generate all_rcp_info data
+    for prod_id in prod_ids:
+        row = generate_dummy_row(row_id)
+        row['prod_id'] = prod_id
+        rcp_info["all_rcp_info"].append(row)
         rcp_info["all_recipe_ids"].append(row['recipe_id'])
+        row_id += 1
+    
+    # Generate only_normal_rcp_info data  
+    for prod_id in prod_ids:
+        row = generate_dummy_row(row_id)
+        row['prod_id'] = prod_id
+        rcp_info["only_normal_rcp_info"].append(row)
+        rcp_info["all_recipe_ids"].append(row['recipe_id'])
+        row_id += 1
         
-        # Distribute across different categories
-        if i % 4 == 0:
-            rcp_info["all_rcp_info"].append(row)
-        elif i % 4 == 1:
-            rcp_info["only_normal_rcp_info"].append(row)
-        elif i % 4 == 2:
-            rcp_info["mother_normal_rcp_info"].append(row)
-        else:
-            rcp_info["only_sample_rcp_info"].append(row)
+    # Generate mother_normal_rcp_info data
+    for prod_id in prod_ids:
+        row = generate_dummy_row(row_id)
+        row['prod_id'] = prod_id
+        rcp_info["mother_normal_rcp_info"].append(row)
+        rcp_info["all_recipe_ids"].append(row['recipe_id'])
+        row_id += 1
+        
+    # Generate only_sample_rcp_info data
+    for prod_id in prod_ids:
+        row = generate_dummy_row(row_id)
+        row['prod_id'] = prod_id
+        rcp_info["only_sample_rcp_info"].append(row)
+        rcp_info["all_recipe_ids"].append(row['recipe_id'])
+        row_id += 1
     
     return rcp_info
 

@@ -1,8 +1,34 @@
 <template>
   <div>
-    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
+    <!-- Loading State -->
+    <div v-if="dataLoading" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
+      <div class="text-center py-12">
+        <i class="pi pi-spin pi-spinner text-4xl text-primary mb-4"></i>
+        <p class="text-surface-600 dark:text-surface-300">디바이스 데이터를 불러오는 중...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="dataError" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
+      <div class="text-center py-12">
+        <i class="pi pi-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+        <p class="text-surface-600 dark:text-surface-300 mb-2">데이터를 불러오는 중 오류가 발생했습니다.</p>
+        <p class="text-sm text-surface-500">{{ dataError.message }}</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
       <h3 class="text-xl font-semibold mb-4">디바이스 카테고리 선택</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- No Data State -->
+      <div v-if="!r3DevicesData || r3DevicesData.length === 0" class="text-center py-8">
+        <i class="pi pi-inbox text-4xl text-surface-400 mb-4"></i>
+        <p class="text-surface-600 dark:text-surface-300">사용 가능한 디바이스가 없습니다.</p>
+      </div>
+
+      <!-- Device Selection Grid -->
+      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Category Cards -->
         <div v-for="device in r3DevicesData" :key="device.category"
           class="border rounded-lg p-4 transition-all duration-200 cursor-pointer" :class="{
@@ -68,7 +94,7 @@
     </div>
 
     <!-- Content Display for R3 -->
-    <div v-if="hasValidSelection && !currentView" class="mt-8">
+    <div v-if="hasValidSelection && !currentView && !dataLoading" class="mt-8">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- 현재 상황 Card -->
         <Card class="cursor-pointer hover:shadow-lg transition-shadow" @click="selectView('current')">
@@ -113,18 +139,27 @@ const props = defineProps({
   }
 })
 
-// Log initial mount
+// Log initial mount and emit stored selections
 onMounted(() => {
   console.log('[FacR3Selection] Component mounted with facId:', props.facId)
+  console.log('[FacR3Selection] Restored selections:', {
+    selectedR3Options: selectedR3Options.value,
+    selectedProdIdsByCategory: selectedProdIdsByCategory.value
+  })
+  
+  // If we have restored selections, emit them
+  if (selectedR3Options.value.length > 0 && hasValidSelection.value) {
+    emitSelectionChanged()
+  }
 })
 
 const emit = defineEmits(['selectionChanged', 'dataFetched'])
 
 const router = useRouter()
 
-// State for selections
-const selectedR3Options = ref([]) // Selected categories
-const selectedProdIdsByCategory = ref({}) // Selected prod_ids per category
+// State for selections - Initialize from sessionStorage
+const selectedR3Options = ref(JSON.parse(sessionStorage.getItem('deviceStatistics_selectedR3Options') || '[]')) // Selected categories
+const selectedProdIdsByCategory = ref(JSON.parse(sessionStorage.getItem('deviceStatistics_selectedProdIds') || '{}')) // Selected prod_ids per category
 const r3Options = ref([])
 const statisticsData = ref(null)
 
@@ -258,6 +293,10 @@ const showProdIdDialog = (device) => {
 
 // Emit selection changed event
 const emitSelectionChanged = () => {
+  // Save selections to sessionStorage whenever they change
+  sessionStorage.setItem('deviceStatistics_selectedR3Options', JSON.stringify(selectedR3Options.value))
+  sessionStorage.setItem('deviceStatistics_selectedProdIds', JSON.stringify(selectedProdIdsByCategory.value))
+  
   emit('selectionChanged', {
     selectedR3Options: selectedR3Options.value,
     selectedProdIdsByCategory: selectedProdIdsByCategory.value,
@@ -361,10 +400,6 @@ const processFilteredData = () => {
 
   const stats = {
     data: latestData.all_rcp_info || [],
-    totalCount: latestData.all_rcp_info?.length || 0,
-    activeCount: latestData.all_rcp_info?.filter(item => item.skip_yn === 'No').length || 0,
-    warningCount: latestData.all_rcp_info?.filter(item => item.para_all < 600).length || 0,
-    errorCount: latestData.all_rcp_info?.filter(item => item.skip_yn === 'Yes').length || 0,
     weeklyData: filteredStatisticsData.value.weekly_data,
     working_devices: filteredStatisticsData.value.working_devices,
     device_options: filteredStatisticsData.value.device_options
@@ -372,7 +407,7 @@ const processFilteredData = () => {
 
   console.log('[FacR3Selection] Processed statistics:', {
     latestDate,
-    totalCount: stats.totalCount,
+    dataCount: stats.data.length,
     weekCount: dateKeys.length,
     selectedProdIds: filteredStatisticsData.value.selectedProdIds
   })
@@ -389,12 +424,18 @@ watch(filteredStatisticsData, (newData) => {
 }, { immediate: true })
 
 // Reset selections when facId changes
-watch(() => props.facId, () => {
-  selectedR3Options.value = []
-  selectedProdIdsByCategory.value = {}
-  statisticsData.value = null
-  currentView.value = null
-}, { immediate: true })
+watch(() => props.facId, (newFacId, oldFacId) => {
+  // Only reset if facId actually changed (not on initial mount)
+  if (oldFacId && newFacId !== oldFacId) {
+    selectedR3Options.value = []
+    selectedProdIdsByCategory.value = {}
+    statisticsData.value = null
+    currentView.value = null
+    // Clear sessionStorage when facId changes
+    sessionStorage.removeItem('deviceStatistics_selectedR3Options')
+    sessionStorage.removeItem('deviceStatistics_selectedProdIds')
+  }
+})
 </script>
 
 <style scoped>

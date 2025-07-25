@@ -29,7 +29,7 @@ cd front-end/
 npm install
 
 # Development server with hot reload
-npm run dev
+npm run dev  # Runs on port 3000
 
 # Build for production
 npm run build
@@ -53,6 +53,7 @@ npm run format
   - `routes.py` - Equipment status endpoints with environment-aware data loading
   - `dummy/` - Dummy data for home development environment
   - `real/` - Real data sources for work/production environment
+- `api/device_statistics/` - Device statistics API module (similar structure)
 - `config.py` - Environment configuration using python-dotenv with DATA_SOURCE_MODE detection
 - `utils/` - Utilities for Redis connection, logging, datetime conversion, and data loading
   - `data_loader.py` - Environment-aware data loading based on platform.node()
@@ -131,23 +132,23 @@ Data modules can export data using these standard attributes:
 
 ### Equipment Status Data Structure
 The `sem_lists.py` module generates dummy SEM equipment data with columns:
-    - `fac_id`: Facility ID
-    - `eqp_id`: Equipment ID
-    - `eqp_model_cd`: Equipment model code
-    - `eqp_grp_id`: Equipment group ID
-    - `vendor_nm`: Vendor name
-    - `eqp_ip`: Equipment IP address
-    - `fab_name`: Fab name
-    - `updt_dt`: Update datetime
-    - `available`: Availability status (On/Off)
-    - `version`: Version number
+- `fac_id`: Facility ID
+- `eqp_id`: Equipment ID
+- `eqp_model_cd`: Equipment model code
+- `eqp_grp_id`: Equipment group ID
+- `vendor_nm`: Vendor name
+- `eqp_ip`: Equipment IP address
+- `fab_name`: Fab name
+- `updt_dt`: Update datetime
+- `available`: Availability status (On/Off)
+- `version`: Version number
 
 ### Frontend Structure
 - Vue 3 with Composition API
 - `src/main.js` - Application entry point with PrimeVue and Tailwind CSS setup
-- `src/router/` - Vue Router configuration with lazy-loaded routes
-- `src/stores/` - Pinia state management
-- `src/views/` - Page components
+- `src/router/` - Vue Router configuration with lazy-loaded routes and facility-based routing
+- `src/stores/` - Pinia state management with fab.js for facility management
+- `src/views/` - Page components organized by feature
 
 #### Device Statistics Module Structure
 The device statistics feature is organized under `front-end/src/views/device-statistics/`:
@@ -207,6 +208,7 @@ device-statistics/
 
 #### General Endpoints (api/routes.py)
 - `GET /api/health` - Health check with Redis connectivity
+- `GET /api/fab-list` - Get facility list dictionary
 - `GET /api/jobs/status` - Scheduled jobs status
 - `GET /api/users` - Get users list (example)
 - `POST /api/users` - Create user (example)
@@ -215,13 +217,21 @@ device-statistics/
 - `GET /api/equipment-status/current-status` - Get current equipment status from sem_lists.py
 - `GET /api/equipment-status/storage` - Get equipment storage information from storage.py
 
+#### Device Statistics Endpoints (api/device_statistics/routes.py)
+- Routes defined with authentication protection
+- Implementation details to be documented
+
 ## Important Configuration
 
 ### Environment Variables
 The application uses environment variables loaded from `.env` file. Key configurations:
-- Redis connection settings
-- Flask application settings
-- Scheduler timezone (Asia/Seoul)
+- `DATA_SOURCE_MODE` - Override environment detection (dummy/real)
+- `FLASK_ENV` - Flask environment (development/production)
+- `FLASK_DEBUG` - Flask debug mode
+- `REDIS_HOST` - Redis server host
+- `REDIS_PORT` - Redis server port
+- `REDIS_DB` - Redis database number
+- `LOG_LEVEL` - Logging level
 
 #### Authentication Environment Variables
 - `AUTH_MODE=bypass` - Bypasses authentication (for development)
@@ -234,12 +244,14 @@ The application uses environment variables loaded from `.env` file. Key configur
 - Memory limits: 256MB RSS reload, 512MB limit
 - Logs to `/var/log/uwsgi/app.log`
 - Lazy apps mode for scheduler (runs only in first worker)
+- CPU affinity configured for 2 cores
 
 ### Development Environment Notes
 - This codebase is designed to work in a company's private cloud environment
 - Redis and Elasticsearch (v7) are available in the company environment but may not be available locally
 - The code runs in WSL environment, Windows-specific tools/installations won't work
 - When testing locally, Redis connectivity may fail but the app should still run
+- Frontend dev server runs on port 3000, proxies API calls to backend on port 5000
 
 ## Frontend Dependencies
 Key packages for the PrimeVue + Tailwind CSS v4 setup:
@@ -259,70 +271,105 @@ Key packages for the PrimeVue + Tailwind CSS v4 setup:
 The application uses ECharts for data visualization instead of PrimeVue Chart components.
 
 #### Device Statistics Charts Implementation
-The `CombinedChartsView.vue` component implements a dual-grid chart system:
+The `CombinedChartsView.vue` component implements a dual-grid interactive chart system:
 
 **Current Implementation Status:**
-- ✅ **Basic dual-grid rendering**: Two vertically stacked charts with separate axes
+- ✅ **Dual-grid rendering**: Two vertically stacked charts with separate axes
 - ✅ **Data unification**: Handles mismatched prodIds between parameter and summary datasets
 - ✅ **Defensive programming**: Comprehensive error handling and data validation
 - ✅ **Responsive design**: Proper resize handling and container management
 - ✅ **Category filtering**: Dynamic chart updates based on selected category
-- ❌ **Tooltip functionality**: Removed due to scope and error issues
-- ❌ **DataZoom controls**: Removed due to synchronization complexity
-- ❌ **Interactive features**: Simplified to basic chart display only
+- ✅ **Data sorting**: Bars sorted by para_all values (largest to smallest)
+- ✅ **DataZoom controls**: Slider and inside zoom with 30% initial range
+- ✅ **Interactive tooltips**: Detailed hover information with product descriptions
+- ✅ **Bar highlighting**: Shadow effects on hover for better visual feedback
+- ✅ **Click interactions**: Click bars to display detailed recipe tables
+- ✅ **Recipe data display**: Inline table component showing filtered recipe information
 
 **Technical Details:**
-- Uses `echarts.init()` with canvas renderer and dirty rect optimization
+- Uses `echarts.init()` with default configuration for stability
 - Implements Map-based data remapping for efficient prodId alignment  
 - Calculates percentage distributions for parameter data
 - Handles empty/invalid data gracefully with chart clearing
 - Memory management with proper disposal in `onUnmounted`
+- Uses plain variables instead of refs for chart instances to prevent ECharts conflicts
 
-**Known Limitations:**
-- No zoom or pan functionality
-- No detailed hover information
-- Charts are display-only without user interaction
-- Fixed grid layout (12%-55%-15% vertical distribution)
+**Interactive Features:**
+- **DataZoom**: Shows first 30% of data initially with slider control at bottom
+- **Tooltips**: Display product ID, container description, total count (2 decimals), and parameter breakdowns
+- **Bar Hover**: Shadow highlighting effects for visual feedback
+- **Click-to-View**: Click any bar to display detailed recipe table below chart
+- **Recipe Table**: Shows recipe_id, operation, parameter values, percentages, and skip status
+- **Category Sync**: Table data updates based on selected category filter
+
+**Chart Layout:**
+- Top grid (12%-55%): Stacked percentage bars for Para 5, 9, 13, 16 distributions
+- Bottom grid (55%-20%): Side-by-side bars for total parameters and available recipes
+- No horizontal grid lines for cleaner appearance
+- Labels inside percentage bars (if > 5%) and on top of total/recipe bars
 
 #### Usage Pattern
 ```javascript
-// Import VChart from vue-echarts
+// Direct ECharts usage (recommended for complex charts)
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, BarChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
-import VChart from 'vue-echarts'
+import { BarChart } from 'echarts/charts'
+import { 
+  GridComponent, 
+  TooltipComponent, 
+  LegendComponent,
+  DataZoomComponent,
+  TitleComponent,
+  ToolboxComponent 
+} from 'echarts/components'
+import * as echarts from 'echarts'
 
 // Register necessary components
 use([
   CanvasRenderer,
-  LineChart,
   BarChart,
   GridComponent,
   TooltipComponent,
-  LegendComponent
+  LegendComponent,
+  DataZoomComponent,
+  TitleComponent,
+  ToolboxComponent
 ])
 
-// In component
-const chartOption = {
-  xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
-  yAxis: { type: 'value' },
-  series: [{ data: [820, 932, 901, 934, 1290], type: 'line' }]
+// Chart initialization and event handling
+let chartInstance = null
+const initChart = () => {
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
+  
+  chartInstance = echarts.init(chartRef.value)
+  chartInstance.on('click', handleBarClick)
+  chartInstance.setOption(chartOption)
 }
 ```
 
 #### Template Usage
 ```vue
 <template>
-  <div ref="chartRef" style="height: 400px; width: 100%;"></div>
+  <div class="chart-container">
+    <div ref="chartRef" style="height: 1050px; width: 100%;"></div>
+    <!-- Recipe table displays below chart when bar is clicked -->
+    <div v-if="selectedProductData" class="recipe-table-card">
+      <!-- Table component for detailed recipe information -->
+    </div>
+  </div>
 </template>
 ```
 
 #### Important Notes
+- Use plain variables (`let chartInstance = null`) instead of refs for chart instances
 - Always dispose of chart instances in `onUnmounted` to prevent memory leaks
 - Handle window resize events to make charts responsive
-- Use `ref` to get DOM element reference for chart initialization
-- Update charts using `setOption()` method when data changes
+- Use `echarts.init()` with default options for better stability
+- Add click handlers using `chartInstance.on('click', handler)`
+- Update charts using `setOption(option, { notMerge: true })` for performance
 
 ## Data Fetching with Vue Query
 
@@ -382,7 +429,24 @@ Use environment variables to force authentication mode:
 - Frontend shows access denied notifications and redirects to main page
 - Development users can access all features without cookies
 
+## Routing Structure
+
+### Frontend Routes (Facility-Based)
+All main feature routes require a facility parameter (`:fac_id`):
+- `/:fac_id` - Facility main view
+- `/:fac_id/equipment-status/*` - Equipment status monitoring
+- `/:fac_id/device-statistics/*` - Device statistics and charts
+- `/:fac_id/recipe-search/*` - Recipe management
+- `/:fac_id/skewvoir/*` - SkewVoir feature
+- `/:fac_id/fail-issue/*` - Failure issue tracking
+- `/:fac_id/hardware-management/*` - Hardware management
+
+### Special Routes
+- `/R3/device-statistics/cd-sem/current-status` - R3 facility current status
+- `/R3/device-statistics/cd-sem/weekly-trend` - R3 facility weekly trends
+
 ## Known Issues to Address
 1. Missing proper `create_scheduler` implementation in `index.py` (currently using mock)
 2. No test files or testing setup for either backend or frontend
-3. No .env example file to guide environment setup
+3. Requirements.txt file has encoding issues
+4. Device statistics API endpoints need implementation

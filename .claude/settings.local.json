@@ -17,7 +17,8 @@
       "Bash(python:*)",
       "Bash(move:*)",
       "Bash(npm run lint:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   },

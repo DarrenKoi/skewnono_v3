@@ -131,11 +131,10 @@ const router = createRouter({
       component: () => import('../views/recipe-search/cd-sem/RecipeMeasurementHistoryView.vue'),
       meta: { requiresFab: true },
     },
-    // Device Statistics routes
+    // Device Statistics routes - redirect to cd-sem since it's the only active tool
     {
       path: '/:fac_id/device-statistics',
-      name: 'device-statistics',
-      component: () => import('../views/device-statistics/DeviceStatisticsView.vue'),
+      redirect: to => `${to.path}/cd-sem`,
       meta: { requiresFab: true },
     },
     {
@@ -144,24 +143,7 @@ const router = createRouter({
       component: () => import('../views/device-statistics/cd-sem/CdSemDeviceStatisticsView.vue'),
       meta: { requiresFab: true },
     },
-    {
-      path: '/:fac_id/device-statistics/hv-sem',
-      name: 'device-statistics-hv-sem',
-      component: () => import('../views/device-statistics/hv-sem/HvSemDeviceStatisticsView.vue'),
-      meta: { requiresFab: true },
-    },
-    {
-      path: '/:fac_id/device-statistics/verity',
-      name: 'device-statistics-verity',
-      component: () => import('../views/device-statistics/verity/VerityDeviceStatisticsView.vue'),
-      meta: { requiresFab: true },
-    },
-    {
-      path: '/:fac_id/device-statistics/provision',
-      name: 'device-statistics-provision',
-      component: () => import('../views/device-statistics/provision/ProvisionDeviceStatisticsView.vue'),
-      meta: { requiresFab: true },
-    },
+    // Note: Only cd-sem is currently functional. Other tool categories removed to simplify flow.
     {
       path: '/R3/device-statistics/cd-sem/current-status',
       name: 'device-statistics-current-status-r3',

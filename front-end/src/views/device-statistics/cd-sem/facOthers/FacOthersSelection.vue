@@ -125,7 +125,11 @@ const fetchDeviceData = async () => {
       errorCount: data.filter(item => item.skip_yn === 'Yes').length
     }
     
-    emit('dataFetched', statisticsData.value)
+    // Only emit the essential data, not the display counts
+    emit('dataFetched', {
+      data: data,
+      selectedDevice: selectedDevice.value
+    })
   } catch (error) {
     console.error('Error fetching device data:', error)
     statisticsData.value = null

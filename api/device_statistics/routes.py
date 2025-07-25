@@ -31,6 +31,9 @@ def get_device_data():
     """
     Get all R3 device statistics data.
     
+    Note: This endpoint returns ALL data. No query parameters are used.
+    Frontend is responsible for filtering data based on user selections.
+    
     Returns data with dates as top-level keys, each containing:
     - all_rcp_info, only_normal_rcp_info, mother_normal_rcp_info, only_sample_rcp_info
     - all_summary, only_normal_summary, mother_normal_summary, only_sample_summary  
