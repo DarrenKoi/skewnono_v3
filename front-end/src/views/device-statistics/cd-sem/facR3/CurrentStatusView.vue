@@ -193,6 +193,19 @@ const prepareChartDataForCategory = (latestWeekData, category) => {
     return
   }
 
+  // Get all selected prod_ids from sessionStorage
+  const selectedProdIdsByCategory = JSON.parse(sessionStorage.getItem('deviceStatistics_selectedProdIds') || '{}')
+  const selectedProdIds = new Set()
+  
+  // Collect all selected prod_ids across all categories
+  Object.values(selectedProdIdsByCategory).forEach(prodIds => {
+    if (Array.isArray(prodIds)) {
+      prodIds.forEach(id => selectedProdIds.add(id))
+    }
+  })
+  
+  console.log('Selected prod_ids for filtering:', Array.from(selectedProdIds))
+
   // Get the appropriate recipe info based on category
   const recipeKey = category === 'all' ? 'all_rcp_info' :
     category === 'only_normal' ? 'only_normal_rcp_info' :
@@ -265,14 +278,23 @@ const prepareChartDataForCategory = (latestWeekData, category) => {
     return
   }
 
-  // Sort summary data by para_all from highest to lowest
-  const sortedSummary = [...summaryData].sort((a, b) => (b.para_all || 0) - (a.para_all || 0))
+  // Filter summary data to only include selected prod_ids
+  const filteredSummary = summaryData.filter(item => selectedProdIds.has(item.prod_id))
+  
+  // Sort filtered summary data by para_all from highest to lowest
+  const sortedSummary = [...filteredSummary].sort((a, b) => (b.para_all || 0) - (a.para_all || 0))
+  
+  console.log('Filtered summary data count:', filteredSummary.length, 'from original:', summaryData.length)
 
   // Extract data for parameter distribution chart from recipe data using percentage values
   // Group by prod_id and calculate averages of percentages
   const prodIdMap = new Map()
 
-  recipeData.forEach(item => {
+  // Filter recipe data to only include selected prod_ids
+  const filteredRecipeData = recipeData.filter(item => selectedProdIds.has(item.prod_id))
+  console.log('Filtered recipe data count:', filteredRecipeData.length, 'from original:', recipeData.length)
+  
+  filteredRecipeData.forEach(item => {
     const prodId = item.prod_id
     if (!prodIdMap.has(prodId)) {
       prodIdMap.set(prodId, {
@@ -311,7 +333,7 @@ const prepareChartDataForCategory = (latestWeekData, category) => {
 
   // Validate extracted data
   if (prodIds.length === 0 || prodIds.some(id => !id)) {
-    console.warn('No valid product IDs found in summary data')
+    console.warn('No valid product IDs found after filtering')
     chartData.value = null
     summaryChartData.value = null
     currentZoomState.value = null

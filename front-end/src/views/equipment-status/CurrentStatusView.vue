@@ -1,18 +1,12 @@
 <template>
   <div class="current-status bg-surface-50 dark:bg-surface-950 px-6 py-20 md:px-12 xl:px-20">
     <div class="flex flex-col items-start gap-4 mb-8">
-      <Button 
-        icon="pi pi-arrow-left" 
-        label="장비 현황으로 돌아가기"
-        outlined
-        size="large"
-        class="mb-2"
-        @click="$router.push({ name: 'equipment-status' })" 
-      />
+      <Button icon="pi pi-arrow-left" label="장비 현황으로 돌아가기" outlined size="large" class="mb-2"
+        @click="$router.push({ name: 'equipment-status' })" />
       <div class="flex flex-col gap-2">
         <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">현재 장비 상태</div>
         <div class="text-surface-500 dark:text-surface-300 text-lg">
-          실시간 장비 상태 및 모니터링 정보
+          거의 실시간 장비 상태 및 모니터링 정보 (Update 주기 : 30분)
           <span v-if="fabStore.currentFab" class="ml-2 font-medium text-primary">
             (FAB: {{ fabStore.currentFab }})
           </span>
@@ -29,22 +23,11 @@
       <div class="mb-4">
         <div class="text-lg font-semibold mb-3">FAB 선택</div>
         <div class="flex flex-wrap gap-2">
-          <Button
-            label="전체"
-            :severity="selectedFab === null ? 'primary' : 'secondary'"
-            :outlined="selectedFab !== null"
-            size="small"
-            @click="selectFab(null)"
-          />
-          <Button
-            v-for="fab in availableFabs"
-            :key="fab.name"
-            :label="`${fab.name} (${fab.count})`"
-            :severity="selectedFab === fab.name ? 'primary' : 'secondary'"
-            :outlined="selectedFab !== fab.name"
-            size="small"
-            @click="selectFab(fab.name)"
-          />
+          <Button label="전체" :severity="selectedFab === null ? 'primary' : 'secondary'" :outlined="selectedFab !== null"
+            size="small" @click="selectFab(null)" />
+          <Button v-for="fab in availableFabs" :key="fab.name" :label="`${fab.name} (${fab.count})`"
+            :severity="selectedFab === fab.name ? 'primary' : 'secondary'" :outlined="selectedFab !== fab.name"
+            size="small" @click="selectFab(fab.name)" />
         </div>
       </div>
 
@@ -52,22 +35,12 @@
       <div class="mb-4">
         <div class="text-lg font-semibold mb-3">장비 분류</div>
         <div class="flex flex-wrap gap-2">
-          <Button
-            label="전체"
-            :severity="selectedCategory === null ? 'primary' : 'secondary'"
-            :outlined="selectedCategory !== null"
-            size="small"
-            @click="selectCategory(null)"
-          />
-          <Button
-            v-for="category in modelCategories"
-            :key="category.name"
+          <Button label="전체" :severity="selectedCategory === null ? 'primary' : 'secondary'"
+            :outlined="selectedCategory !== null" size="small" @click="selectCategory(null)" />
+          <Button v-for="category in modelCategories" :key="category.name"
             :label="`${category.name} (${category.count})`"
             :severity="selectedCategory === category.name ? 'primary' : 'secondary'"
-            :outlined="selectedCategory !== category.name"
-            size="small"
-            @click="selectCategory(category.name)"
-          />
+            :outlined="selectedCategory !== category.name" size="small" @click="selectCategory(category.name)" />
         </div>
       </div>
 
@@ -75,22 +48,11 @@
       <div v-if="selectedCategory && availableModels.length > 0" class="mb-4">
         <div class="text-md font-semibold mb-3">{{ selectedCategory }} 모델</div>
         <div class="flex flex-wrap gap-2">
-          <Button
-            label="전체"
-            :severity="selectedModel === null ? 'primary' : 'secondary'"
-            :outlined="selectedModel !== null"
-            size="small"
-            @click="selectModel(null)"
-          />
-          <Button
-            v-for="model in availableModels"
-            :key="model.name"
-            :label="`${model.name} (${model.count})`"
-            :severity="selectedModel === model.name ? 'primary' : 'secondary'"
-            :outlined="selectedModel !== model.name"
-            size="small"
-            @click="selectModel(model.name)"
-          />
+          <Button label="전체" :severity="selectedModel === null ? 'primary' : 'secondary'"
+            :outlined="selectedModel !== null" size="small" @click="selectModel(null)" />
+          <Button v-for="model in availableModels" :key="model.name" :label="`${model.name} (${model.count})`"
+            :severity="selectedModel === model.name ? 'primary' : 'secondary'" :outlined="selectedModel !== model.name"
+            size="small" @click="selectModel(model.name)" />
         </div>
       </div>
 
@@ -105,20 +67,8 @@
       </Message>
 
       <!-- Data Table -->
-      <DataTable 
-        v-else
-        :value="filteredTableData" 
-        :paginator="true" 
-        :rows="10"
-        :rowsPerPageOptions="[5, 10, 20, 50]"
-        :loading="isLoading"
-        stripedRows
-        showGridlines
-        size="small"
-        scrollable
-        scrollHeight="600px"
-        class="text-sm"
-      >
+      <DataTable v-else :value="filteredTableData" :paginator="true" :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]"
+        :loading="isLoading" stripedRows showGridlines size="small" scrollable scrollHeight="600px" class="text-sm">
         <template #header>
           <div class="flex justify-between items-center">
             <span class="text-sm text-surface-500">
@@ -126,12 +76,7 @@
             </span>
             <span class="p-input-icon-left">
               <i class="pi pi-search" />
-              <InputText 
-                v-model="globalFilterValue" 
-                placeholder="전체 검색" 
-                @input="onGlobalFilterChange"
-                class="w-64"
-              />
+              <InputText v-model="globalFilterValue" placeholder="전체 검색" @input="onGlobalFilterChange" class="w-64" />
             </span>
           </div>
         </template>
@@ -140,21 +85,18 @@
           <div class="text-center py-4">데이터가 없습니다.</div>
         </template>
 
-        <Column field="fac_id" header="시설 ID" sortable :style="{ width: '100px' }" />
+        <Column field="fac_id" header="FAB ID" sortable :style="{ width: '100px' }" />
         <Column field="eqp_id" header="장비 ID" sortable :style="{ width: '120px' }" />
         <Column field="eqp_model_cd" header="모델" sortable :style="{ width: '150px' }" />
         <Column field="eqp_grp_id" header="그룹 ID" sortable :style="{ width: '120px' }" />
-        
+
         <Column field="vendor_nm" header="제조사" sortable :style="{ width: '100px' }" />
         <Column field="eqp_ip" header="IP 주소" sortable :style="{ width: '150px' }" />
-        <Column field="fab_name" header="FAB" sortable :style="{ width: '100px' }" />
-        
+        <Column field="fab_name" header="FAB NAME" sortable :style="{ width: '100px' }" />
+
         <Column field="available" header="상태" sortable :style="{ width: '80px' }">
           <template #body="{ data }">
-            <Tag 
-              :value="data.available" 
-              :severity="data.available === 'On' ? 'success' : 'danger'"
-            />
+            <Tag :value="data.available" :severity="data.available === 'On' ? 'success' : 'danger'" />
           </template>
         </Column>
 
@@ -180,12 +122,12 @@ const { data, isLoading, isError } = useQuery(equipmentQueries.currentStatus())
 const availableFabs = computed(() => {
   const rawData = data.value?.data || []
   const fabs = {}
-  
+
   // First filter by fac_id from navbar store
-  const filteredData = fabStore.currentFab 
+  const filteredData = fabStore.currentFab
     ? rawData.filter(item => item.fac_id === fabStore.currentFab)
     : rawData
-  
+
   filteredData.forEach(item => {
     if (item.fab_name) {
       if (!fabs[item.fab_name]) {
@@ -194,24 +136,24 @@ const availableFabs = computed(() => {
       fabs[item.fab_name].count++
     }
   })
-  
+
   return Object.values(fabs).sort((a, b) => a.name.localeCompare(b.name))
 })
 
 // Computed properties - Filter by fac_id first, then by fab_name
 const tableData = computed(() => {
   const rawData = data.value?.data || []
-  
+
   // First filter by fac_id from navbar store
-  let filteredData = fabStore.currentFab 
+  let filteredData = fabStore.currentFab
     ? rawData.filter(item => item.fac_id === fabStore.currentFab)
     : rawData
-  
+
   // Then filter by selected fab_name if any
   if (selectedFab.value) {
     filteredData = filteredData.filter(item => item.fab_name === selectedFab.value)
   }
-  
+
   return filteredData
 })
 
@@ -224,9 +166,9 @@ const globalFilterValue = ref('')
 // Model category classification
 const getModelCategory = (modelCode) => {
   if (!modelCode) return 'UNKNOWN'
-  
+
   const model = modelCode.toUpperCase()
-  
+
   if (model.startsWith('CG') || model.startsWith('GT')) {
     return 'CD-SEM'
   } else if (model.startsWith('TP')) {
@@ -236,14 +178,14 @@ const getModelCategory = (modelCode) => {
   } else if (model.includes('PROVISION')) {
     return 'PROVISION'
   }
-  
+
   return 'OTHER'
 }
 
 // Compute model categories with counts
 const modelCategories = computed(() => {
   const categories = {}
-  
+
   tableData.value.forEach(item => {
     const category = getModelCategory(item.eqp_model_cd)
     if (category !== 'UNKNOWN' && category !== 'OTHER') {
@@ -253,16 +195,16 @@ const modelCategories = computed(() => {
       categories[category].count++
     }
   })
-  
+
   return Object.values(categories).sort((a, b) => a.name.localeCompare(b.name))
 })
 
 // Get available models for selected category
 const availableModels = computed(() => {
   if (!selectedCategory.value) return []
-  
+
   const models = {}
-  
+
   tableData.value
     .filter(item => getModelCategory(item.eqp_model_cd) === selectedCategory.value)
     .forEach(item => {
@@ -272,15 +214,15 @@ const availableModels = computed(() => {
       }
       models[modelName].count++
     })
-  
+
   return Object.values(models).sort((a, b) => a.name.localeCompare(b.name))
 })
 
 // Category-filtered data
 const categoryFilteredData = computed(() => {
   if (!selectedCategory.value) return tableData.value
-  
-  return tableData.value.filter(item => 
+
+  return tableData.value.filter(item =>
     getModelCategory(item.eqp_model_cd) === selectedCategory.value
   )
 })
@@ -288,8 +230,8 @@ const categoryFilteredData = computed(() => {
 // Model-filtered data
 const modelFilteredData = computed(() => {
   if (!selectedModel.value) return categoryFilteredData.value
-  
-  return categoryFilteredData.value.filter(item => 
+
+  return categoryFilteredData.value.filter(item =>
     item.eqp_model_cd === selectedModel.value
   )
 })
@@ -297,10 +239,10 @@ const modelFilteredData = computed(() => {
 // Global search filtered data
 const filteredTableData = computed(() => {
   if (!globalFilterValue.value) return modelFilteredData.value
-  
+
   const searchValue = globalFilterValue.value.toLowerCase()
   return modelFilteredData.value.filter(item => {
-    return Object.values(item).some(field => 
+    return Object.values(item).some(field =>
       String(field).toLowerCase().includes(searchValue)
     )
   })

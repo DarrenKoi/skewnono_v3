@@ -90,6 +90,12 @@ const router = createRouter({
       meta: { requiresFab: true },
     },
     {
+      path: '/:fac_id/recipe-search/:tool',
+      name: 'recipe-search-tool',
+      component: () => import('../views/recipe-search/RecipeSearchView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
       path: '/:fac_id/recipe-search/cd-sem',
       name: 'recipe-search-cd-sem',
       component: () => import('../views/recipe-search/cd-sem/CdSemRecipeSearchView.vue'),
@@ -131,6 +137,24 @@ const router = createRouter({
       component: () => import('../views/recipe-search/cd-sem/RecipeMeasurementHistoryView.vue'),
       meta: { requiresFab: true },
     },
+    {
+      path: '/:fac_id/recipe-search/hv-sem/open',
+      name: 'hv-sem-recipe-open',
+      component: () => import('../views/recipe-search/hv-sem/HvSemRecipeOpenView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/recipe-search/hv-sem/horizontal-check',
+      name: 'hv-sem-recipe-horizontal-check',
+      component: () => import('../views/recipe-search/hv-sem/HvSemRecipeHorizontalCheckView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/recipe-search/hv-sem/measurement-history',
+      name: 'hv-sem-recipe-measurement-history',
+      component: () => import('../views/recipe-search/hv-sem/HvSemRecipeMeasurementHistoryView.vue'),
+      meta: { requiresFab: true },
+    },
     // Device Statistics routes - redirect to cd-sem since it's the only active tool
     {
       path: '/:fac_id/device-statistics',
@@ -153,6 +177,19 @@ const router = createRouter({
       path: '/R3/device-statistics/cd-sem/weekly-trend',
       name: 'device-statistics-weekly-trend-r3',
       component: () => import('../views/device-statistics/cd-sem/facR3/WeeklyTrendView.vue'),
+    },
+    // Other facilities device statistics routes
+    {
+      path: '/:fac_id/device-statistics/cd-sem/current-status',
+      name: 'device-statistics-current-status',
+      component: () => import('../views/device-statistics/cd-sem/facOthers/CurrentStatusView.vue'),
+      meta: { requiresFab: true },
+    },
+    {
+      path: '/:fac_id/device-statistics/cd-sem/weekly-trend',
+      name: 'device-statistics-weekly-trend',
+      component: () => import('../views/device-statistics/cd-sem/facOthers/WeeklyTrendView.vue'),
+      meta: { requiresFab: true },
     },
     // Fail Issue routes
     {

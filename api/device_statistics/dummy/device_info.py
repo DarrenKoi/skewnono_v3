@@ -331,6 +331,203 @@ def get_device_data(device_name):
     }
 
 
+def get_other_fab_options(fac_id):
+    """
+    Returns product options for other facilities (M*) as a flat list.
+    Different fabs have different product focus and quantities.
+    
+    Args:
+        fac_id (str): Facility ID (e.g., 'M1', 'M2')
+        
+    Returns:
+        dict: Dictionary containing flat list of prod_ids
+    """
+    if fac_id == 'M1':
+        # M1 has 18 products total
+        return {
+            "prod_ids": [
+                'PROA', 'PROB', 'PROC', 'PROK', 'PROL', 'PROM', 'PRON', 'PROO',
+                'PROP', 'PROQ', 'PROD', 'PROE', 'PROF', 'PROG', 'PROW',
+                'PROH', 'PROI', 'PROJ'
+            ]
+        }
+    elif fac_id == 'M2':
+        # M2 has 19 products total
+        return {
+            "prod_ids": [
+                'PROA', 'PROB', 'PROC', 'PROK', 'PROL', 'PROD', 'PROE', 'PROF', 
+                'PROG', 'PROW', 'PROX', 'PROY', 'PROZ', 'PR1A', 'PR1B',
+                'PROH', 'PROI', 'PROJ', 'PR2A'
+            ]
+        }
+    else:
+        # Other M* fabs have 16 products
+        return {
+            "prod_ids": [
+                'PROA', 'PROB', 'PROC', 'PROK', 'PROL', 'PROM', 'PROD', 'PROE', 
+                'PROF', 'PROG', 'PROW', 'PROX', 'PROH', 'PROI', 'PROJ', 'PR2A'
+            ]
+        }
+
+
+def get_other_fab_tools(fac_id):
+    """
+    Get available tools for other fabs (M*).
+    
+    Args:
+        fac_id (str): Facility ID (e.g., 'M1', 'M2')
+        
+    Returns:
+        list: List of available tool names
+    """
+    # Define tools based on fab ID
+    if fac_id == 'M1':
+        return [
+            'CD-SEM-A01',
+            'CD-SEM-A02',
+            'CD-SEM-A03',
+            'CD-SEM-B01',
+            'CD-SEM-B02'
+        ]
+    elif fac_id == 'M2':
+        return [
+            'CD-SEM-C01',
+            'CD-SEM-C02',
+            'CD-SEM-D01',
+            'CD-SEM-D02',
+            'CD-SEM-D03'
+        ]
+    else:
+        # Default tools for other M* fabs
+        return [
+            f'CD-SEM-{fac_id}-01',
+            f'CD-SEM-{fac_id}-02',
+            f'CD-SEM-{fac_id}-03'
+        ]
+
+
+def get_other_fab_tool_data(fac_id, tool_name):
+    """
+    Get tool-specific data for other fabs.
+    
+    Args:
+        fac_id (str): Facility ID
+        tool_name (str): Tool name
+        
+    Returns:
+        dict: Tool statistics data
+    """
+    # Generate dummy data for the tool
+    tool_data = []
+    
+    # Generate 20-30 recipes for this tool
+    num_recipes = random.randint(20, 30)
+    
+    for i in range(num_recipes):
+        row = generate_dummy_row(i)
+        # Customize for the specific tool
+        row['tool_name'] = tool_name
+        row['fac_id'] = fac_id
+        row['tool_status'] = random.choice(['Active', 'Idle', 'Maintenance'])
+        row['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        tool_data.append(row)
+    
+    # Calculate summary statistics
+    summary = {
+        'total_recipes': len(tool_data),
+        'active_recipes': len([r for r in tool_data if r['skip_yn'] == 'No']),
+        'tool_utilization': random.randint(60, 95),
+        'avg_para_all': sum(r['para_all'] for r in tool_data) // len(tool_data),
+        'last_maintenance': (datetime.now() - timedelta(days=random.randint(1, 30))).strftime('%Y-%m-%d')
+    }
+    
+    return {
+        'fac_id': fac_id,
+        'tool_name': tool_name,
+        'data': tool_data,
+        'summary': summary,
+        'timestamp': datetime.now().isoformat()
+    }
+
+
+def get_other_fab_cd_sem_data(fac_id):
+    """
+    Get CD-SEM device statistics data for other fabs (M*).
+    Returns data in the same format as R3 with dates as top-level keys.
+    
+    Args:
+        fac_id (str): Facility ID (e.g., 'M1', 'M2')
+        
+    Returns:
+        dict: CD-SEM statistics data with date-based structure like R3
+    """
+    # Get product options for this fab (now returns flat list)
+    options = get_other_fab_options(fac_id)
+    
+    # Get all prod_ids
+    all_prod_ids = options["prod_ids"]
+    
+    # Create combined category data
+    combined_category = {
+        "category": "ALL",
+        "prod_ids": all_prod_ids
+    }
+    
+    # Generate weekly data structure (same as R3)
+    weekly_data = generate_weekly_data(combined_category, num_weeks=8)
+    
+    # Add working devices mapping (assign categories based on product prefix)
+    working_devices = {}
+    for prod_id in all_prod_ids:
+        # Determine category based on product ID pattern
+        if prod_id in ['PROA', 'PROB', 'PROC', 'PROK', 'PROL', 'PROM', 'PRON', 'PROO', 'PROP', 'PROQ', 'PROR', 'PROS', 'PROT', 'PROU', 'PROV']:
+            category = "DRAM"
+        elif prod_id in ['PROD', 'PROE', 'PROF', 'PROG', 'PROW', 'PROX', 'PROY', 'PROZ', 'PR1A', 'PR1B', 'PR1C', 'PR1D', 'PR1E', 'PR1F', 'PR1G']:
+            category = "NAND"
+        else:
+            category = "NM"
+            
+        working_devices[prod_id] = {
+            "prod_id": prod_id,
+            "prod_catg_cd2": category
+        }
+    
+    # Structure the response with dates as top-level keys
+    restructured_data = {
+        'working_devices': working_devices,
+        'available_products': all_prod_ids,  # Simple list of products
+        'fac_id': fac_id
+    }
+    
+    # Process weekly data into date keys
+    if 'weekly_data' in weekly_data:
+        for date_key, week_data in weekly_data['weekly_data'].items():
+            # Flatten the structure for each date
+            date_data = {}
+            
+            # Extract recipe info data
+            if 'rcp_info' in week_data:
+                date_data['all_rcp_info'] = week_data['rcp_info'].get('all_rcp_info', [])
+                date_data['only_normal_rcp_info'] = week_data['rcp_info'].get('only_normal_rcp_info', [])
+                date_data['mother_normal_rcp_info'] = week_data['rcp_info'].get('mother_normal_rcp_info', [])
+                date_data['only_sample_rcp_info'] = week_data['rcp_info'].get('only_sample_rcp_info', [])
+            
+            # Extract summary data by category
+            if 'summary_by_category' in week_data:
+                date_data['all_summary'] = week_data['summary_by_category'].get('all_summary', [])
+                date_data['only_normal_summary'] = week_data['summary_by_category'].get('only_normal_summary', [])
+                date_data['mother_normal_summary'] = week_data['summary_by_category'].get('mother_normal_summary', [])
+                date_data['only_sample_summary'] = week_data['summary_by_category'].get('only_sample_summary', [])
+            
+            # Add all_recipe_list
+            date_data['all_recipe_list'] = week_data.get('all_recipe_list', [])
+            
+            # Add this date's data to the restructured result
+            restructured_data[date_key] = date_data
+    
+    return restructured_data
+
+
 def generate_recipe_info_data(prod_ids, num_rows=50):
     """
     Generates recipe info data for given product IDs.

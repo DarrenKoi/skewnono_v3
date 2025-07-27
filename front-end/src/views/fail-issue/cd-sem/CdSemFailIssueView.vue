@@ -1,5 +1,14 @@
 <template>
   <div class="fail-issue bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
+    <!-- Back Button -->
+    <Button 
+        label="장비 선택으로 돌아가기" 
+        icon="pi pi-arrow-left" 
+        @click="goBackToToolSelection" 
+        size="large" 
+        outlined 
+      class="mb-2"
+    />
     <div class="flex flex-col items-start gap-2 mb-8">
       <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Fail Issue</div>
       <div class="text-surface-500 dark:text-surface-300 text-lg">장비 및 프로세스 관련 이슈를 확인하고 관리하세요</div>
@@ -181,11 +190,15 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Badge from 'primevue/badge'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
+
+const router = useRouter()
+const route = useRoute()
 
 const selected = ref(0)
 
@@ -284,6 +297,12 @@ const weeklyStats = ref({
   measFails: 18,
   resolved: 38
 })
+
+// Go back to tool selection
+const goBackToToolSelection = () => {
+  const facId = route.params.fac_id || 'R3'
+  router.push(`/${facId}/fail-issue`)
+}
 
 // Get severity type for badge
 const getSeverityType = (severity) => {

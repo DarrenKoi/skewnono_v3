@@ -41,24 +41,6 @@
 
     <!-- Main Chart Section -->
     <div v-if="selectedCategory && !loading" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h2 class="text-2xl font-semibold">Weekly Trend Analysis</h2>
-          <p class="text-surface-600 dark:text-surface-400 mt-1">
-            {{ categoryLabels[selectedCategory] }} - {{ totalSelectedProducts }} products selected
-          </p>
-        </div>
-      </div>
-
-      <!-- Selected Category Display -->
-      <div class="mb-4">
-        <span class="text-sm font-medium text-surface-600 dark:text-surface-400">Selected Category: </span>
-        <span
-          class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300">
-          {{ categoryLabels[selectedCategory] }}
-        </span>
-      </div>
-
       <!-- Chart Component -->
       <WeeklyTrendChart :weekly-data="weeklyData" :selected-category="selectedCategory"
         :selected-prod-ids="selectedProdIds" />

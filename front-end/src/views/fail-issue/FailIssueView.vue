@@ -13,7 +13,7 @@
         v-for="tool in toolCategories" 
         :key="tool.id"
         :class="{
-          'cursor-pointer hover:shadow-lg transition-shadow duration-200': tool.active,
+          'cursor-pointer transition-all duration-200 hover:shadow-lg': tool.active,
           'opacity-50 cursor-not-allowed': !tool.active
         }"
         @click="tool.active ? navigateToTool(tool.id) : null"
@@ -21,16 +21,30 @@
         <template #content>
           <div class="text-center p-4">
             <i :class="[tool.icon, {
-              'text-primary-500': tool.active,
+              'text-primary-600 dark:text-primary-400': tool.active,
               'text-surface-400': !tool.active
             }]" class="text-4xl mb-4"></i>
-            <h3 class="text-xl font-semibold mb-2" :class="{
+            <h3 class="text-xl font-semibold mb-3" :class="{
               'text-surface-900 dark:text-surface-0': tool.active,
               'text-surface-500': !tool.active
             }">{{ tool.name }}</h3>
-            <p class="text-surface-600 dark:text-surface-400 mb-2">{{ tool.description }}</p>
-            <div v-if="!tool.active" class="text-xs text-surface-500 italic">
-              Coming later
+            
+            <!-- Features List for Active Tools -->
+            <div v-if="tool.active && tool.features" class="mb-2">
+              <ul class="text-sm text-surface-600 dark:text-surface-400 space-y-1">
+                <li v-for="feature in tool.features" :key="feature" class="flex items-center">
+                  <i class="pi pi-check text-green-500 text-xs mr-2"></i>
+                  {{ feature }}
+                </li>
+              </ul>
+            </div>
+            
+            <!-- Simple Description for Inactive Tools -->
+            <div v-else-if="!tool.active">
+              <p class="text-surface-600 dark:text-surface-400 mb-2 text-sm">{{ tool.description }}</p>
+              <div class="text-xs text-surface-500 italic">
+                Coming later
+              </div>
             </div>
           </div>
         </template>
@@ -50,9 +64,13 @@ const toolCategories = [
   {
     id: 'cd-sem',
     name: 'CD-SEM',
-    description: 'CD-SEM 장애 이슈 관리',
     icon: 'pi pi-search',
-    active: true
+    active: true,
+    features: [
+      'Align Fail',
+      'Meas Fail',
+      '주간 통계'
+    ]
   },
   {
     id: 'hv-sem',

@@ -1,83 +1,138 @@
 <template>
-  <div class="hv-sem-recipe-content">
-    <!-- HV-SEM Recipe Search Interface -->
-    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
-      <div class="flex flex-col gap-6">
-        <!-- Search Input -->
-        <div class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">HV-SEM Recipe 검색</label>
+  <div>
+    <!-- Header with Back Button -->
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Recipe 검색</h3>
+      <Button 
+        label="장비 선택으로 돌아가기" 
+        icon="pi pi-arrow-left" 
+        @click="goBack" 
+        severity="secondary" 
+        size="small"
+        outlined 
+      />
+    </div>
+    <!-- All Recipe Search Options -->
+    <div class="space-y-6">
+      <!-- Recipe Open Section -->
+      <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+        <div class="mb-4">
+          <div class="flex items-center gap-3 mb-2">
+            <i class="pi pi-folder-open text-2xl text-primary"></i>
+            <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Recipe 열기</h3>
+          </div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm">Recipe 설정 상태를 확인할 수 있습니다</p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-4">
           <AutoComplete 
-            v-model="selectedRecipe" 
-            :suggestions="filteredRecipes"
+            v-model="recipeOpenRecipe" 
+            :suggestions="filteredRecipesOpen"
             :forceSelection="true"
-            @complete="searchRecipe"
+            @complete="searchRecipeOpen"
             placeholder="HV-SEM Recipe 이름을 입력하세요..."
-            class="w-full"
+            class="flex-1"
             :dropdown="true"
             :minLength="1"
           />
-          <small class="text-surface-500 dark:text-surface-400">
-            * HV-SEM 전용 레시피를 검색하고 선택하세요
-          </small>
-        </div>
-
-        <!-- Equipment Selection -->
-        <div class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">장비 선택</label>
-          <Dropdown 
-            v-model="selectedEquipment" 
-            :options="hvSemEquipments" 
-            optionLabel="name"
-            optionValue="id"
-            placeholder="HV-SEM 장비를 선택하세요"
-            class="w-full"
+          <Button 
+            label="Recipe 열기"
+            icon="pi pi-external-link"
+            @click="openRecipe"
+            :disabled="!recipeOpenRecipe"
+            class="w-full sm:w-auto"
           />
         </div>
-
-        <!-- Action Buttons -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Button 
-            label="Recipe 정보 조회"
-            icon="pi pi-info-circle"
-            @click="viewRecipeInfo"
-            :disabled="!selectedRecipe"
-            class="w-full"
-          />
-          <Button 
-            label="Recipe 실행"
-            icon="pi pi-play"
-            @click="executeRecipe"
-            :disabled="!selectedRecipe || !selectedEquipment"
-            severity="success"
-            class="w-full"
-          />
+        
+        <!-- Show Recipe Open Content -->
+        <div v-if="showRecipeOpen && recipeOpenRecipe" class="mt-6 pt-6 border-t">
+          <HvSemRecipeOpenView :recipe-name="recipeOpenRecipe" />
         </div>
       </div>
-    </div>
 
-    <!-- Recipe Information Display -->
-    <div v-if="recipeInfo" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <h3 class="text-xl font-semibold mb-4 text-surface-900 dark:text-surface-0">Recipe 정보</h3>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h4 class="font-semibold mb-2 text-surface-700 dark:text-surface-300">기본 정보</h4>
-          <div class="space-y-2 text-sm">
-            <div><strong>Recipe ID:</strong> {{ recipeInfo.id }}</div>
-            <div><strong>버전:</strong> {{ recipeInfo.version }}</div>
-            <div><strong>생성일:</strong> {{ recipeInfo.createDate }}</div>
-            <div><strong>수정일:</strong> {{ recipeInfo.modifyDate }}</div>
+      <!-- Horizontal Check Section -->
+      <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+        <div class="mb-4">
+          <div class="flex items-center gap-3 mb-2">
+            <i class="pi pi-check-circle text-2xl text-primary"></i>
+            <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">횡전개 체크</h3>
+          </div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm">Recipe의 횡전개 여부와 Version을 체크할 수 있습니다</p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-4">
+          <AutoComplete 
+            v-model="horizontalCheckRecipe" 
+            :suggestions="filteredRecipesHorizontal"
+            :forceSelection="true"
+            @complete="searchRecipeHorizontal"
+            placeholder="횡전개 체크할 HV-SEM Recipe를 입력하세요..."
+            class="flex-1"
+            :dropdown="true"
+            :minLength="1"
+          />
+          <Button 
+            label="횡전개 체크 실행"
+            icon="pi pi-check-square"
+            @click="checkHorizontal"
+            :disabled="!horizontalCheckRecipe"
+            class="w-full sm:w-auto"
+          />
+        </div>
+        
+        <!-- Show Horizontal Check Content -->
+        <div v-if="showHorizontalCheck && horizontalCheckRecipe" class="mt-6 pt-6 border-t">
+          <HvSemRecipeHorizontalCheckView :recipe-name="horizontalCheckRecipe" />
+        </div>
+      </div>
+
+      <!-- Measurement History Section -->
+      <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+        <div class="mb-4">
+          <div class="flex items-center gap-3 mb-2">
+            <i class="pi pi-chart-line text-2xl text-primary"></i>
+            <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Meas. History</h3>
+          </div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm">측정 기록을 확인할 수 있습니다</p>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="flex flex-col sm:flex-row gap-4">
+            <AutoComplete 
+              v-model="measurementHistoryRecipe" 
+              :suggestions="filteredRecipesMeasurement"
+              :forceSelection="true"
+              @complete="searchRecipeMeasurement"
+              placeholder="측정 기록을 조회할 HV-SEM Recipe를 입력하세요..."
+              class="flex-1"
+              :dropdown="true"
+              :minLength="1"
+            />
+          </div>
+          
+          <div v-if="measurementHistoryRecipe" class="flex flex-col sm:flex-row gap-4">
+            <Calendar 
+              v-model="dateRange" 
+              selectionMode="range" 
+              :manualInput="false" 
+              dateFormat="yy/mm/dd"
+              placeholder="날짜 범위 선택"
+              showIcon
+              class="flex-1"
+            />
+            <Button 
+              label="측정 기록 조회"
+              icon="pi pi-history"
+              @click="checkMeasurementHistory"
+              :disabled="!measurementHistoryRecipe || !dateRange || dateRange.length !== 2"
+              class="w-full sm:w-auto"
+            />
           </div>
         </div>
         
-        <div>
-          <h4 class="font-semibold mb-2 text-surface-700 dark:text-surface-300">설정 정보</h4>
-          <div class="space-y-2 text-sm">
-            <div><strong>전압:</strong> {{ recipeInfo.voltage }} kV</div>
-            <div><strong>빔 전류:</strong> {{ recipeInfo.beamCurrent }} pA</div>
-            <div><strong>배율:</strong> {{ recipeInfo.magnification }}x</div>
-            <div><strong>픽셀 크기:</strong> {{ recipeInfo.pixelSize }} nm</div>
-          </div>
+        <!-- Show Measurement History Content -->
+        <div v-if="showMeasurementHistory && measurementHistoryRecipe && dateRange" class="mt-6 pt-6 border-t">
+          <HvSemRecipeMeasurementHistoryView :recipe-name="measurementHistoryRecipe" :date-range="dateRange" />
         </div>
       </div>
     </div>
@@ -85,19 +140,32 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import AutoComplete from 'primevue/autocomplete'
-import Dropdown from 'primevue/dropdown'
+import Calendar from 'primevue/calendar'
 import Button from 'primevue/button'
+import HvSemRecipeOpenView from './HvSemRecipeOpenView.vue'
+import HvSemRecipeHorizontalCheckView from './HvSemRecipeHorizontalCheckView.vue'
+import HvSemRecipeMeasurementHistoryView from './HvSemRecipeMeasurementHistoryView.vue'
 
-// Reactive data
-const selectedRecipe = ref(null)
-const selectedEquipment = ref(null)
-const filteredRecipes = ref([])
-const recipeInfo = ref(null)
+// Separate reactive data for each section
+const recipeOpenRecipe = ref(null)
+const horizontalCheckRecipe = ref(null)
+const measurementHistoryRecipe = ref(null)
+const dateRange = ref(null)
 
-// Sample HV-SEM recipe data
-const hvSemRecipes = [
+// Filtered suggestions for each autocomplete
+const filteredRecipesOpen = ref([])
+const filteredRecipesHorizontal = ref([])
+const filteredRecipesMeasurement = ref([])
+
+// Show/hide content for each section
+const showRecipeOpen = ref(false)
+const showHorizontalCheck = ref(false)
+const showMeasurementHistory = ref(false)
+
+// Sample HV-SEM recipe data - replace with actual API call
+const recipeDatabase = [
   'HV_RECIPE_001_HIGH_RES',
   'HV_RECIPE_002_FAST_SCAN',
   'HV_RECIPE_003_DEEP_FOCUS',
@@ -108,46 +176,59 @@ const hvSemRecipes = [
   'HV_RECIPE_008_MAINTENANCE'
 ]
 
-// Sample HV-SEM equipment data
-const hvSemEquipments = [
-  { id: 'HVSEM_001', name: 'HV-SEM-A (고해상도)' },
-  { id: 'HVSEM_002', name: 'HV-SEM-B (고속스캔)' },
-  { id: 'HVSEM_003', name: 'HV-SEM-C (분석전용)' },
-  { id: 'HVSEM_004', name: 'HV-SEM-D (검사전용)' }
-]
-
-// Recipe search functionality
-const searchRecipe = (event) => {
+// Recipe search functions for each autocomplete
+const searchRecipeOpen = (event) => {
   const query = event.query.toLowerCase()
-  filteredRecipes.value = hvSemRecipes.filter(recipe => 
+  filteredRecipesOpen.value = recipeDatabase.filter(recipe => 
     recipe.toLowerCase().includes(query)
   )
 }
 
-// View recipe information
-const viewRecipeInfo = () => {
-  if (!selectedRecipe.value) return
-  
-  // Simulate recipe information retrieval
-  recipeInfo.value = {
-    id: selectedRecipe.value,
-    version: '1.2.3',
-    createDate: '2024-01-15',
-    modifyDate: '2024-07-15',
-    voltage: '15.0',
-    beamCurrent: '50',
-    magnification: '100000',
-    pixelSize: '2.5'
+const searchRecipeHorizontal = (event) => {
+  const query = event.query.toLowerCase()
+  filteredRecipesHorizontal.value = recipeDatabase.filter(recipe => 
+    recipe.toLowerCase().includes(query)
+  )
+}
+
+const searchRecipeMeasurement = (event) => {
+  const query = event.query.toLowerCase()
+  filteredRecipesMeasurement.value = recipeDatabase.filter(recipe => 
+    recipe.toLowerCase().includes(query)
+  )
+}
+
+// Action functions for each section
+const openRecipe = () => {
+  if (recipeOpenRecipe.value) {
+    showRecipeOpen.value = true
   }
 }
 
-// Execute recipe
-const executeRecipe = () => {
-  if (!selectedRecipe.value || !selectedEquipment.value) return
-  
-  // Simulate recipe execution
-  alert(`HV-SEM Recipe "${selectedRecipe.value}"을(를) ${selectedEquipment.value} 장비에서 실행합니다.`)
+const checkHorizontal = () => {
+  if (horizontalCheckRecipe.value) {
+    showHorizontalCheck.value = true
+  }
 }
+
+const checkMeasurementHistory = () => {
+  if (measurementHistoryRecipe.value && dateRange.value && dateRange.value.length === 2) {
+    showMeasurementHistory.value = true
+  }
+}
+
+// Go back function
+const goBack = () => {
+  window.history.back()
+}
+
+// Initialize date range on mount
+onMounted(() => {
+  const today = new Date()
+  const oneMonthAgo = new Date()
+  oneMonthAgo.setMonth(today.getMonth() - 1)
+  dateRange.value = [oneMonthAgo, today]
+})
 </script>
 
 <style scoped>

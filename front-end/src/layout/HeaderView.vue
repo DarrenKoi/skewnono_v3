@@ -1,15 +1,11 @@
 <template>
   <header
     class="bg-surface-0 dark:bg-surface-900 py-4 px-12 border-b border-surface-200 dark:border-surface-800 flex items-center justify-between relative lg:static">
-    <router-link to="/" class="flex items-center gap-4 py-2 no-underline">
+    <router-link to="/"
+      class="flex items-center gap-2 py-2 no-underline text-xl font-bold text-surface-900 dark:text-surface-0 transition-transform duration-200 ease-in-out hover:scale-105">
       <!-- <img src="@/assets/skewnono.png" alt="Logo" class="w-8 h-8" /> -->
-      <span
-        class="flex items-center text-xl font-bold text-surface-900 dark:text-surface-0 hover:text-primary transition-colors duration-150">
-        <i class="pi pi-ruler mr-2 text-primary"></i>
-        <span class="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">CD-SEM Data
-          Solution</span>
-
-      </span>
+      <i class="pi pi-ruler text-primary"></i>
+      <span class="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">CD-SEM Data Platform</span>
     </router-link>
 
     <a v-styleclass="{

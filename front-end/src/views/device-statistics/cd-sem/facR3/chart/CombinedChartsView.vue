@@ -13,12 +13,23 @@
               ({{ categoryLabels[selectedProductData.category] }})
             </span>
           </h3>
-          <button 
-            @click="clearSelectedProduct"
-            class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-          >
-            <i class="pi pi-times text-lg"></i>
-          </button>
+          <div class="flex gap-2">
+            <button 
+              @click="exportToExcel"
+              class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center gap-2 text-sm transition-colors shadow-sm hover:shadow-md"
+              title="Export to Excel"
+            >
+              <i class="pi pi-file-excel"></i>
+              Export Excel
+            </button>
+            <button 
+              @click="clearSelectedProduct"
+              class="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 p-1.5"
+              title="Close"
+            >
+              <i class="pi pi-times text-lg"></i>
+            </button>
+          </div>
         </div>
         
         <div v-if="selectedProductData.recipeData.length === 0" class="text-center py-8">
@@ -184,6 +195,67 @@ const handleBarClick = (params) => {
 
 const clearSelectedProduct = () => {
   selectedProductData.value = null;
+};
+
+// Export table data to Excel
+const exportToExcel = async () => {
+  if (!selectedProductData.value || !selectedProductData.value.recipeData.length) {
+    console.warn('No data to export');
+    return;
+  }
+
+  try {
+    // Dynamically import xlsx to reduce initial bundle size
+    const XLSX = await import('xlsx');
+    
+    // Prepare data for export
+    const exportData = selectedProductData.value.recipeData.map(recipe => ({
+      'Recipe ID': recipe.recipe_id,
+      'Operation': recipe.oper_desc || '-',
+      'Para 5': recipe.para_5 || 0,
+      'Para 9': recipe.para_9 || 0,
+      'Para 13': recipe.para_13 || 0,
+      'Para 16': recipe.para_16 || 0,
+      'Para 5%': `${(recipe.para_5_percent || 0).toFixed(1)}%`,
+      'Para 9%': `${(recipe.para_9_percent || 0).toFixed(1)}%`,
+      'Para 13%': `${(recipe.para_13_percent || 0).toFixed(1)}%`,
+      'Para 16%': `${(recipe.para_16_percent || 0).toFixed(1)}%`,
+      'Skip': recipe.skip_yn === 'Y' ? 'Yes' : 'No'
+    }));
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Set column widths
+    const colWidths = [
+      { wch: 15 }, // Recipe ID
+      { wch: 30 }, // Operation
+      { wch: 10 }, // Para 5
+      { wch: 10 }, // Para 9
+      { wch: 10 }, // Para 13
+      { wch: 10 }, // Para 16
+      { wch: 10 }, // Para 5%
+      { wch: 10 }, // Para 9%
+      { wch: 10 }, // Para 13%
+      { wch: 10 }, // Para 16%
+      { wch: 8 }   // Skip
+    ];
+    ws['!cols'] = colWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Recipe Details');
+
+    // Generate filename with product ID and timestamp
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    const filename = `Recipe_Details_${selectedProductData.value.prodId}_${timestamp}.xlsx`;
+
+    // Write and download the file
+    XLSX.writeFile(wb, filename);
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    alert('Failed to export data. Please try again.');
+  }
 };
 
 const updateChart = () => {

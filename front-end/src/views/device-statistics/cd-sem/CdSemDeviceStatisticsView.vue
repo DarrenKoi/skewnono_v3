@@ -33,7 +33,11 @@ import FacOthersSelection from './facOthers/FacOthersSelection.vue'
 const route = useRoute()
 
 // Get fac_id from route params or query
-const facId = computed(() => route.params.facId || route.query.fac_id || 'R3')
+const facId = computed(() => {
+  const id = route.params.fac_id || route.query.fac_id || 'R3'
+  console.log(`[CdSemDeviceStatisticsView] Current facility ID: ${id}`)
+  return id
+})
 
 // State for tracking data
 const currentSelectionData = ref(null)

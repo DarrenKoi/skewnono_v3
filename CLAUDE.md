@@ -163,7 +163,8 @@ device-statistics/
 │   ├── FacR3Selection.vue       # R3 facility selection component
 │   ├── WeeklyTrendView.vue      # Weekly trend analysis view
 │   └── chart/                   # Chart components for data visualization
-│       └── CombinedChartsView.vue # Dual-grid ECharts component for parameter & summary data
+│       ├── CombinedChartsView.vue # Dual-grid ECharts component for parameter & summary data
+│       └── WeeklyTrendChart.vue   # Time series line chart for weekly trends
 ```
 
 **Key Components:**
@@ -174,6 +175,11 @@ device-statistics/
   - Bottom grid: Side-by-side bars for total parameters and available recipes
   - Uses unified data mapping to handle mismatched prodIds between parameter and summary data
   - Implements defensive data handling and error recovery
+- **WeeklyTrendChart.vue**: Interactive time series analysis component featuring:
+  - Multi-product line chart visualization with customizable Y-axis parameters
+  - Product selection interface with search, select all/clear all functionality
+  - Maintains chart instance even when clearing selections (shows empty state message)
+  - Uses ECharts with proper lifecycle management to prevent disposal issues
 
 ### Frontend Styling Configuration
 
@@ -370,6 +376,8 @@ const initChart = () => {
 - Use `echarts.init()` with default options for better stability
 - Add click handlers using `chartInstance.on('click', handler)`
 - Update charts using `setOption(option, { notMerge: true })` for performance
+- Keep chart containers in DOM when possible - use empty state messages instead of v-if to prevent disposal issues
+- Use `await nextTick()` before chart initialization to ensure DOM readiness
 
 ## Data Fetching with Vue Query
 

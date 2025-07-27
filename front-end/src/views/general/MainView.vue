@@ -30,7 +30,7 @@
         <div>
           <h1 class="text-4xl font-bold mb-2">Welcome to SKEWNONO</h1>
           <p class="text-xl opacity-90">
-            Metrology SEM Management System{{ selectedFab ? ` - ${selectedFab} Fab` : '' }}
+            Metrology SEM Data Platform{{ selectedFab ? ` - ${selectedFab} Fab` : '' }}
           </p>
         </div>
         <div class="text-right">
@@ -304,11 +304,11 @@ onMounted(() => {
   if (route.query.accessDenied) {
     const reason = route.query.reason
     let message = 'Access denied to this resource'
-    
+
     if (reason === 'insufficient_permissions') {
       message = 'You do not have permission to access this feature. Contact your administrator if you believe this is an error.'
     }
-    
+
     toast.add({
       severity: 'error',
       summary: 'Access Denied',

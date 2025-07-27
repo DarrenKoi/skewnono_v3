@@ -1,5 +1,14 @@
 <template>
   <div class="recipe-search bg-surface-50 dark:bg-surface-950 px-12 py-20 md:px-20 xl:px-[20rem]">
+    <!-- Back Button -->
+    <Button 
+      icon="pi pi-arrow-left" 
+      label="장비 선택으로 돌아가기" 
+      outlined 
+      size="large" 
+      class="mb-2"
+      @click="goBackToToolSelection" 
+    />
     <div class="flex flex-col items-start gap-2 mb-8">
       <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Recipe 검색</div>
       <div class="text-surface-500 dark:text-surface-300 text-lg">Recipe 정보를 검색하고 조회하세요</div>
@@ -82,9 +91,13 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import Button from 'primevue/button'
+import AutoComplete from 'primevue/autocomplete'
+import Calendar from 'primevue/calendar'
 
 const router = useRouter()
+const route = useRoute()
 
 // Search-related reactive data
 const selectedSearchType = ref(null)
@@ -207,6 +220,12 @@ const canExecuteAction = computed(() => {
   }
   return true
 })
+
+// Go back to tool selection
+const goBackToToolSelection = () => {
+  const facId = route.params.fac_id || 'R3'
+  router.push(`/${facId}/recipe-search`)
+}
 
 // Execute action by navigating to sub-route
 const executeAction = () => {
