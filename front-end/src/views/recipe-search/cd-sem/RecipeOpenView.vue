@@ -35,54 +35,95 @@
             icon="pi pi-external-link"
             @click="openRecipe"
             :disabled="!selectedRecipe"
+            :loading="loading"
             class="w-full sm:w-auto"
           />
         </div>
 
-        <!-- Selected Recipe Info -->
-        <div v-if="selectedRecipe" class="bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
-          <div class="flex items-center gap-3">
-            <i class="pi pi-info-circle text-primary"></i>
-            <div>
-              <h3 class="font-semibold text-surface-900 dark:text-surface-0">선택된 Recipe</h3>
-              <p class="text-surface-700 dark:text-surface-200 mt-1">{{ selectedRecipe }}</p>
+        <!-- Error Message -->
+        <Message v-if="error" severity="error" :closable="true" @close="error = null">
+          {{ error }}
+        </Message>
+
+        <!-- Recipe Data Tables -->
+        <div v-if="recipeData" class="mt-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left Side: IDP Image Info Table -->
+            <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
+              <h3 class="text-lg font-semibold mb-4">IDP Image Information</h3>
+              <DataTable 
+                :value="recipeData.idp_image_info" 
+                :paginator="true" 
+                :rows="10"
+                responsiveLayout="scroll"
+                @row-click="handleParameterClick"
+                class="cursor-pointer"
+                :rowHover="true"
+              >
+                <Column field="Parameter" header="Parameter" :sortable="true" />
+                <Column field="SEQ" header="SEQ" :sortable="true" />
+                <Column field="Region" header="Region" :sortable="true" />
+                <Column field="Addressing" header="Addressing" />
+                <Column field="Meas_Counting" header="Meas Count" :sortable="true" />
+              </DataTable>
+            </div>
+
+            <!-- Right Side: Dynamic Data Table -->
+            <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
+              <h3 class="text-lg font-semibold mb-4">
+                {{ selectedParameter ? `Parameter ${selectedParameter} Details` : 'Select a Parameter' }}
+              </h3>
+              <DataTable 
+                v-if="filteredData && filteredData.length > 0"
+                :value="filteredData" 
+                :paginator="true" 
+                :rows="10"
+                responsiveLayout="scroll"
+              >
+                <!-- Wafer MP Info Columns -->
+                <Column field="ChipNo_X" header="Chip X" :sortable="true" />
+                <Column field="ChipNo_Y" header="Chip Y" :sortable="true" />
+                <Column field="Coordinate_X" header="Coord X" :sortable="true" />
+                <Column field="Coordinate_Y" header="Coord Y" :sortable="true" />
+                <Column field="P_No" header="P No" :sortable="true" />
+                <Column field="D_No" header="D No" :sortable="true" />
+                <Column field="Diff" header="Diff">
+                  <template #body="slotProps">
+                    <Tag :severity="slotProps.data.Diff ? 'success' : 'danger'">
+                      {{ slotProps.data.Diff ? 'Yes' : 'No' }}
+                    </Tag>
+                  </template>
+                </Column>
+                <Column field="Rel" header="Rel">
+                  <template #body="slotProps">
+                    <Tag :severity="slotProps.data.Rel ? 'success' : 'danger'">
+                      {{ slotProps.data.Rel ? 'Yes' : 'No' }}
+                    </Tag>
+                  </template>
+                </Column>
+              </DataTable>
+              <div v-else class="text-center text-surface-500 py-8">
+                Click on a parameter in the left table to view details
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Results Section -->
-        <div v-if="actionResult" class="mt-4">
-          <Message :severity="actionResult.severity" :closable="true" @close="actionResult = null">
-            {{ actionResult.message }}
-          </Message>
-        </div>
-
-        <!-- Recipe Details (shown after opening) -->
-        <div v-if="recipeDetails" class="mt-6">
-          <h3 class="text-xl font-semibold mb-4">Recipe 상세 정보</h3>
-          <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p class="text-surface-600 dark:text-surface-400">Recipe ID</p>
-                <p class="font-semibold">{{ recipeDetails.id }}</p>
-              </div>
-              <div>
-                <p class="text-surface-600 dark:text-surface-400">버전</p>
-                <p class="font-semibold">{{ recipeDetails.version }}</p>
-              </div>
-              <div>
-                <p class="text-surface-600 dark:text-surface-400">작성일</p>
-                <p class="font-semibold">{{ recipeDetails.createdAt }}</p>
-              </div>
-              <div>
-                <p class="text-surface-600 dark:text-surface-400">상태</p>
-                <p class="font-semibold">{{ recipeDetails.status }}</p>
-              </div>
-            </div>
-            <div class="mt-4">
-              <p class="text-surface-600 dark:text-surface-400">설명</p>
-              <p class="mt-1">{{ recipeDetails.description }}</p>
-            </div>
+          <!-- Additional Data Tables Below -->
+          <div class="mt-6 bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-4">Wafer Alignment Information</h3>
+            <DataTable 
+              :value="recipeData.wafer_align_info" 
+              :paginator="true" 
+              :rows="5"
+              responsiveLayout="scroll"
+            >
+              <Column field="Align_No" header="Align No" :sortable="true" />
+              <Column field="Chip.X" header="Chip X" :sortable="true" />
+              <Column field="Chip.Y" header="Chip Y" :sortable="true" />
+              <Column field="Coordinate.X" header="Coordinate X" :sortable="true" />
+              <Column field="Coordinate.Y" header="Coordinate Y" :sortable="true" />
+              <Column field="P.No" header="P No" :sortable="true" />
+            </DataTable>
           </div>
         </div>
       </div>
@@ -91,13 +132,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import axios from 'axios'
 
+const route = useRoute()
 const selectedRecipe = ref(null)
-const actionResult = ref(null)
-const recipeDetails = ref(null)
+const recipeData = ref(null)
+const loading = ref(false)
+const error = ref(null)
+const selectedParameter = ref(null)
 
-// Load selected recipe from sessionStorage and auto-execute if present
+// Get fac_id from route params
+const facId = computed(() => route.params.fac_id || 'R3')
+
+// Filter wafer_mp_info based on selected parameter
+const filteredData = computed(() => {
+  if (!recipeData.value || !selectedParameter.value) return []
+  
+  // Filter wafer_mp_info by P_No matching the selected parameter
+  const paramNumber = parseInt(selectedParameter.value.replace('Para_', ''))
+  return recipeData.value.wafer_mp_info.filter(item => item.P_No === paramNumber)
+})
+
+// Load selected recipe from sessionStorage
 onMounted(() => {
   const storedRecipe = sessionStorage.getItem('selectedRecipe')
   if (storedRecipe) {
@@ -108,34 +166,52 @@ onMounted(() => {
   }
 })
 
+// Handle parameter click in IDP table
+const handleParameterClick = (event) => {
+  const rowData = event.data
+  selectedParameter.value = rowData.Parameter
+  console.log('Selected parameter:', rowData)
+}
+
 // Action: Open Recipe
 const openRecipe = async () => {
   if (!selectedRecipe.value) return
   
-  actionResult.value = {
-    severity: 'info',
-    message: `Recipe를 열고 있습니다: ${selectedRecipe.value}`
-  }
+  loading.value = true
+  error.value = null
   
-  // Simulate API call
-  setTimeout(() => {
-    // Mock recipe details
-    recipeDetails.value = {
-      id: selectedRecipe.value,
-      version: '1.2.3',
-      createdAt: '2024-01-15',
-      status: 'Active',
-      description: '이 Recipe는 표준 생산 공정을 위한 설정입니다.'
-    }
+  try {
+    // Call the API with fac_id and tool_category
+    const response = await axios.get(
+      `/api/recipe-search/${facId.value}/cd-sem/recipe-open/${selectedRecipe.value}`
+    )
     
-    actionResult.value = {
-      severity: 'success',
-      message: `Recipe가 성공적으로 열렸습니다: ${selectedRecipe.value}`
+    if (response.data.success) {
+      recipeData.value = response.data.data
+      console.log('Recipe data received:', recipeData.value)
+      
+      // Log each data type separately for clarity
+      console.log('IDP Image Info:', recipeData.value.idp_image_info)
+      console.log('Wafer MP Info:', recipeData.value.wafer_mp_info)
+      console.log('Wafer Align Info:', recipeData.value.wafer_align_info)
+    } else {
+      error.value = response.data.error || 'Failed to load recipe data'
     }
-  }, 1000)
+  } catch (err) {
+    console.error('Error fetching recipe data:', err)
+    error.value = err.response?.data?.error || 'Error loading recipe data'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <style scoped>
-/* Page-specific styles if needed */
+:deep(.p-datatable-row:hover) {
+  background-color: var(--p-surface-200) !important;
+}
+
+:deep(.p-datatable-row) {
+  cursor: pointer;
+}
 </style>

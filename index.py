@@ -6,6 +6,7 @@ from config import Config
 from api.routes import api_bp
 from api.equipment_status.routes import equipment_status_bp
 from api.device_statistics.routes import device_statistics_bp
+from api.recipe_search.routes import recipe_search_bp
 
 
 # Configure logging
@@ -52,6 +53,7 @@ def create_app():
     app.register_blueprint(api_bp)
     app.register_blueprint(equipment_status_bp, url_prefix='/api/equipment-status')
     app.register_blueprint(device_statistics_bp, url_prefix='/api/device-statistics')
+    app.register_blueprint(recipe_search_bp, url_prefix='/api/recipe-search')
 
     @app.before_request
     def force_http():

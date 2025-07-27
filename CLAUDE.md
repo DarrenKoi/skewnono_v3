@@ -453,8 +453,14 @@ All main feature routes require a facility parameter (`:fac_id`):
 - `/R3/device-statistics/cd-sem/current-status` - R3 facility current status
 - `/R3/device-statistics/cd-sem/weekly-trend` - R3 facility weekly trends
 
+## API Best Practices
+
+### Recipe Search Recommendations
+- **Always include `fac_id`**: For recipe-search, for API calls from front-end and back-end, always include `fac_id` for proper access clearance.
+
 ## Known Issues to Address
 1. Missing proper `create_scheduler` implementation in `index.py` (currently using mock)
 2. No test files or testing setup for either backend or frontend
 3. Requirements.txt file has encoding issues
 4. Device statistics API endpoints need implementation
+```
