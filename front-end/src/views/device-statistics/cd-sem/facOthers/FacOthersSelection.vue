@@ -3,10 +3,10 @@
     <!-- Product Selection -->
     <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">Product Selection</h3>
+        <h3 class="text-lg font-semibold text-surface-900 dark:text-surface-0">제품 선택</h3>
         <div class="flex gap-2">
-          <Button label="Select All" size="small" text @click="selectAllProducts" />
-          <Button label="Clear All" size="small" text severity="secondary" @click="clearAllProducts" />
+          <Button label="전체 선택" size="small" text @click="selectAllProducts" />
+          <Button label="전체 해제" size="small" text severity="secondary" @click="clearAllProducts" />
         </div>
       </div>
       
@@ -25,14 +25,14 @@
       </div>
       
       <div class="mt-4 text-sm text-surface-500">
-        Selected: {{ selectedProducts.length }} of {{ availableProducts.length }} products
+        선택됨: {{ selectedProducts.length }} / {{ availableProducts.length }} 제품
       </div>
     </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border text-center">
       <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
-      <p class="mt-2 text-surface-600 dark:text-surface-400">Loading CD-SEM data...</p>
+      <p class="mt-2 text-surface-600 dark:text-surface-400">CD-SEM 데이터를 불러오는 중...</p>
     </div>
 
     <!-- Content Display for Other Fabs -->
@@ -43,8 +43,8 @@
           <template #content>
             <div class="text-center py-8">
               <i class="pi pi-chart-bar text-6xl text-primary mb-4"></i>
-              <h3 class="text-xl font-semibold mb-2">Current Status</h3>
-              <p class="text-surface-600 dark:text-surface-400">View latest parameter distribution</p>
+              <h3 class="text-xl font-semibold mb-2">현재 상황</h3>
+              <p class="text-surface-600 dark:text-surface-400">최신 파라미터 분포 확인</p>
             </div>
           </template>
         </Card>
@@ -54,8 +54,8 @@
           <template #content>
             <div class="text-center py-8">
               <i class="pi pi-chart-line text-6xl text-primary mb-4"></i>
-              <h3 class="text-xl font-semibold mb-2">Weekly Trend</h3>
-              <p class="text-surface-600 dark:text-surface-400">Analyze weekly data trends</p>
+              <h3 class="text-xl font-semibold mb-2">주간 추이</h3>
+              <p class="text-surface-600 dark:text-surface-400">주간 데이터 추이 분석</p>
             </div>
           </template>
         </Card>

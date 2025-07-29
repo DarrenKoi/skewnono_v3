@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 
-def generate_dummy_row(row_id):
+def generate_dummy_row(row_id, is_fac_others=False):
     """
     Generates a single row of dummy data as a dictionary.
 
     Args:
         row_id (int): A unique ID to ensure recipe_id and oper_id are unique.
+        is_fac_others (bool): If True, generate facOthers-specific columns only.
 
     Returns:
         dict: A dictionary representing a single row of data.
@@ -40,7 +41,6 @@ def generate_dummy_row(row_id):
     # --- Generate random data for each column ---
 
     prod_id = random.choice(prod_ids)
-    oper_id = f"OPER-{1000 + row_id}"
     oper_desc = random.choice(oper_descriptions)
     recipe_id = f"RCP-{prod_id}-{500 + row_id}"
 
@@ -58,37 +58,58 @@ def generate_dummy_row(row_id):
         return round((part / total) * 100, 2)
 
     # --- Construct the row dictionary ---
-    row = {
-        "prod_id": prod_id,
-        "oper_id": oper_id,
-        "oper_desc": oper_desc,
-        "oper_seq": random.randint(1, 10),
-        "samp_seq": random.randint(1, 5),
-        "eqp_id": f"EQP-{''.join(random.choices(string.ascii_uppercase + string.digits, k=3))}",
-        "recipe_id": recipe_id,
-        "bak_eqp_id_ival": f"BAK-{''.join(random.choices(string.ascii_uppercase + string.digits, k=3))}",
-        "skip_yn": random.choice(["Yes", "No"]),
-        "chg_tm": f"{random.randint(0, 23):02}:{random.randint(0, 59):02}:{random.randint(0, 59):02}",
-        "ctn_desc": f"Container for {prod_id}",
-        "para_all": para_all,
-        "para_16": para_16,
-        "para_13": para_13,
-        "para_9": para_9,
-        "para_5": para_5,
-        "para_16_percent": calculate_percent(para_16, para_all),
-        "para_13_percent": calculate_percent(para_13, para_all),
-        "para_9_percent": calculate_percent(para_9, para_all),
-        "para_5_percent": calculate_percent(para_5, para_all),
-    }
+    if is_fac_others:
+        # For facOthers, only include specific columns
+        row = {
+            "prod_id": prod_id,
+            "oper_desc": oper_desc,
+            "recipe_id": recipe_id,
+            "ctn_desc": f"Container for {prod_id}",
+            "para_all": para_all,
+            "para_16": para_16,
+            "para_13": para_13,
+            "para_9": para_9,
+            "para_5": para_5,
+            "para_16_percent": calculate_percent(para_16, para_all),
+            "para_13_percent": calculate_percent(para_13, para_all),
+            "para_9_percent": calculate_percent(para_9, para_all),
+            "para_5_percent": calculate_percent(para_5, para_all),
+        }
+    else:
+        # For R3, include all columns
+        oper_id = f"OPER-{1000 + row_id}"
+        row = {
+            "prod_id": prod_id,
+            "oper_id": oper_id,
+            "oper_desc": oper_desc,
+            "oper_seq": random.randint(1, 10),
+            "samp_seq": random.randint(1, 5),
+            "eqp_id": f"EQP-{''.join(random.choices(string.ascii_uppercase + string.digits, k=3))}",
+            "recipe_id": recipe_id,
+            "bak_eqp_id_ival": f"BAK-{''.join(random.choices(string.ascii_uppercase + string.digits, k=3))}",
+            "skip_yn": random.choice(["Yes", "No"]),
+            "chg_tm": f"{random.randint(0, 23):02}:{random.randint(0, 59):02}:{random.randint(0, 59):02}",
+            "ctn_desc": f"Container for {prod_id}",
+            "para_all": para_all,
+            "para_16": para_16,
+            "para_13": para_13,
+            "para_9": para_9,
+            "para_5": para_5,
+            "para_16_percent": calculate_percent(para_16, para_all),
+            "para_13_percent": calculate_percent(para_13, para_all),
+            "para_9_percent": calculate_percent(para_9, para_all),
+            "para_5_percent": calculate_percent(para_5, para_all),
+        }
     return row
 
 
-def generate_summary_row(prod_id):
+def generate_summary_row(prod_id, is_fac_others=False):
     """
     Generates a single row of summary data for a given product ID.
 
     Args:
         prod_id (str): The product ID to generate a summary for.
+        is_fac_others (bool): If True, generate facOthers-specific columns only.
 
     Returns:
         dict: A dictionary representing a single row of summary data.
@@ -113,22 +134,40 @@ def generate_summary_row(prod_id):
         return round((part / total) * 100, 2)
 
     # --- Construct the summary row dictionary ---
-    row = {
-        "prod_id": prod_id,
-        "para_all": para_all,
-        "para_16": para_16,
-        "para_13": para_13,
-        "para_9": para_9,
-        "para_5": para_5,
-        "para_16_percent": calculate_percent(para_16, para_all),
-        "para_13_percent": calculate_percent(para_13, para_all),
-        "para_9_percent": calculate_percent(para_9, para_all),
-        "para_5_percent": calculate_percent(para_5, para_all),
-        "ctn_desc": f"Summary Container for {prod_id}",
-        "total_recipe": total_recipe,
-        "avail_recipe": avail_recipe,
-        "avail_recipe_percent": calculate_percent(avail_recipe, total_recipe)
-    }
+    if is_fac_others:
+        # For facOthers, different column order and no total_recipe/avail_recipe_percent
+        row = {
+            "prod_id": prod_id,
+            "para_16": para_16,
+            "para_13": para_13,
+            "para_5": para_5,
+            "para_9": para_9,
+            "para_all": para_all,
+            "para_16_percent": calculate_percent(para_16, para_all),
+            "para_13_percent": calculate_percent(para_13, para_all),
+            "para_9_percent": calculate_percent(para_9, para_all),
+            "para_5_percent": calculate_percent(para_5, para_all),
+            "ctn_desc": f"Summary Container for {prod_id}",
+            "avail_recipe": avail_recipe
+        }
+    else:
+        # For R3, include all columns
+        row = {
+            "prod_id": prod_id,
+            "para_all": para_all,
+            "para_16": para_16,
+            "para_13": para_13,
+            "para_9": para_9,
+            "para_5": para_5,
+            "para_16_percent": calculate_percent(para_16, para_all),
+            "para_13_percent": calculate_percent(para_13, para_all),
+            "para_9_percent": calculate_percent(para_9, para_all),
+            "para_5_percent": calculate_percent(para_5, para_all),
+            "ctn_desc": f"Summary Container for {prod_id}",
+            "total_recipe": total_recipe,
+            "avail_recipe": avail_recipe,
+            "avail_recipe_percent": calculate_percent(avail_recipe, total_recipe)
+        }
     return row
 
 
@@ -473,8 +512,8 @@ def get_other_fab_cd_sem_data(fac_id):
         "prod_ids": all_prod_ids
     }
     
-    # Generate weekly data structure (same as R3)
-    weekly_data = generate_weekly_data(combined_category, num_weeks=8)
+    # Generate weekly data structure (with facOthers format)
+    weekly_data = generate_weekly_data(combined_category, num_weeks=8, is_fac_others=True)
     
     # Add working devices mapping (assign categories based on product prefix)
     working_devices = {}
@@ -528,7 +567,7 @@ def get_other_fab_cd_sem_data(fac_id):
     return restructured_data
 
 
-def generate_recipe_info_data(prod_ids, num_rows=50):
+def generate_recipe_info_data(prod_ids, num_rows=50, is_fac_others=False):
     """
     Generates recipe info data for given product IDs.
     Each category gets data for ALL product IDs to match summary data structure.
@@ -536,6 +575,7 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
     Args:
         prod_ids (list): List of product IDs to use
         num_rows (int): Number of rows to generate per category (not used, kept for compatibility)
+        is_fac_others (bool): If True, generate facOthers-specific columns only.
         
     Returns:
         dict: Recipe info data categorized by type, including recipe_ids for matching
@@ -553,7 +593,7 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
     
     # Generate all_rcp_info data
     for prod_id in prod_ids:
-        row = generate_dummy_row(row_id)
+        row = generate_dummy_row(row_id, is_fac_others=is_fac_others)
         row['prod_id'] = prod_id
         rcp_info["all_rcp_info"].append(row)
         rcp_info["all_recipe_ids"].append(row['recipe_id'])
@@ -561,7 +601,7 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
     
     # Generate only_normal_rcp_info data  
     for prod_id in prod_ids:
-        row = generate_dummy_row(row_id)
+        row = generate_dummy_row(row_id, is_fac_others=is_fac_others)
         row['prod_id'] = prod_id
         rcp_info["only_normal_rcp_info"].append(row)
         rcp_info["all_recipe_ids"].append(row['recipe_id'])
@@ -569,7 +609,7 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
         
     # Generate mother_normal_rcp_info data
     for prod_id in prod_ids:
-        row = generate_dummy_row(row_id)
+        row = generate_dummy_row(row_id, is_fac_others=is_fac_others)
         row['prod_id'] = prod_id
         rcp_info["mother_normal_rcp_info"].append(row)
         rcp_info["all_recipe_ids"].append(row['recipe_id'])
@@ -577,7 +617,7 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
         
     # Generate only_sample_rcp_info data
     for prod_id in prod_ids:
-        row = generate_dummy_row(row_id)
+        row = generate_dummy_row(row_id, is_fac_others=is_fac_others)
         row['prod_id'] = prod_id
         rcp_info["only_sample_rcp_info"].append(row)
         rcp_info["all_recipe_ids"].append(row['recipe_id'])
@@ -586,12 +626,13 @@ def generate_recipe_info_data(prod_ids, num_rows=50):
     return rcp_info
 
 
-def generate_summary_data_by_category(prod_ids):
+def generate_summary_data_by_category(prod_ids, is_fac_others=False):
     """
     Generates summary data for each category (all, only_normal, mother_normal, only_sample).
     
     Args:
         prod_ids (list): List of product IDs
+        is_fac_others (bool): If True, generate facOthers-specific columns only.
         
     Returns:
         dict: Summary data for each category
@@ -607,70 +648,127 @@ def generate_summary_data_by_category(prod_ids):
         # Generate summary for each category with different value ranges
         
         # All summary - highest values
-        all_summary_row = generate_summary_row(prod_id)
+        all_summary_row = generate_summary_row(prod_id, is_fac_others=is_fac_others)
         summary_data["all_summary"].append(all_summary_row)
         
         # Only normal summary - medium values
         normal_para_all = random.randint(3000, 7000)
-        normal_summary_row = {
-            "prod_id": prod_id,
-            "para_all": normal_para_all,
-            "para_16": random.randint(600, normal_para_all // 2),
-            "para_13": random.randint(300, normal_para_all // 3),
-            "para_9": random.randint(150, normal_para_all // 4),
-            "para_5": random.randint(80, normal_para_all // 5),
-            "ctn_desc": f"Normal Container for {prod_id}",
-            "total_recipe": random.randint(15, 40),
-            "avail_recipe": random.randint(8, 30)
-        }
+        if is_fac_others:
+            # FacOthers format
+            normal_summary_row = {
+                "prod_id": prod_id,
+                "para_16": random.randint(600, normal_para_all // 2),
+                "para_13": random.randint(300, normal_para_all // 3),
+                "para_5": random.randint(80, normal_para_all // 5),
+                "para_9": random.randint(150, normal_para_all // 4),
+                "para_all": normal_para_all,
+                "para_16_percent": 0,  # Will calculate below
+                "para_13_percent": 0,
+                "para_9_percent": 0,
+                "para_5_percent": 0,
+                "ctn_desc": f"Normal Container for {prod_id}",
+                "avail_recipe": random.randint(8, 30)
+            }
+        else:
+            # R3 format
+            normal_summary_row = {
+                "prod_id": prod_id,
+                "para_all": normal_para_all,
+                "para_16": random.randint(600, normal_para_all // 2),
+                "para_13": random.randint(300, normal_para_all // 3),
+                "para_9": random.randint(150, normal_para_all // 4),
+                "para_5": random.randint(80, normal_para_all // 5),
+                "ctn_desc": f"Normal Container for {prod_id}",
+                "total_recipe": random.randint(15, 40),
+                "avail_recipe": random.randint(8, 30)
+            }
         # Calculate percentages
         normal_summary_row["para_16_percent"] = round((normal_summary_row["para_16"] / normal_para_all) * 100, 2)
         normal_summary_row["para_13_percent"] = round((normal_summary_row["para_13"] / normal_para_all) * 100, 2)
         normal_summary_row["para_9_percent"] = round((normal_summary_row["para_9"] / normal_para_all) * 100, 2)
         normal_summary_row["para_5_percent"] = round((normal_summary_row["para_5"] / normal_para_all) * 100, 2)
-        normal_summary_row["avail_recipe_percent"] = round((normal_summary_row["avail_recipe"] / normal_summary_row["total_recipe"]) * 100, 2)
+        if not is_fac_others:
+            normal_summary_row["avail_recipe_percent"] = round((normal_summary_row["avail_recipe"] / normal_summary_row["total_recipe"]) * 100, 2)
         summary_data["only_normal_summary"].append(normal_summary_row)
         
         # Mother normal summary - lower values
         mother_para_all = random.randint(2000, 5000)
-        mother_summary_row = {
-            "prod_id": prod_id,
-            "para_all": mother_para_all,
-            "para_16": random.randint(400, mother_para_all // 2),
-            "para_13": random.randint(200, mother_para_all // 3),
-            "para_9": random.randint(100, mother_para_all // 4),
-            "para_5": random.randint(50, mother_para_all // 5),
-            "ctn_desc": f"Mother Container for {prod_id}",
-            "total_recipe": random.randint(10, 25),
-            "avail_recipe": random.randint(5, 20)
-        }
+        if is_fac_others:
+            # FacOthers format
+            mother_summary_row = {
+                "prod_id": prod_id,
+                "para_16": random.randint(400, mother_para_all // 2),
+                "para_13": random.randint(200, mother_para_all // 3),
+                "para_5": random.randint(50, mother_para_all // 5),
+                "para_9": random.randint(100, mother_para_all // 4),
+                "para_all": mother_para_all,
+                "para_16_percent": 0,  # Will calculate below
+                "para_13_percent": 0,
+                "para_9_percent": 0,
+                "para_5_percent": 0,
+                "ctn_desc": f"Mother Container for {prod_id}",
+                "avail_recipe": random.randint(5, 20)
+            }
+        else:
+            # R3 format
+            mother_summary_row = {
+                "prod_id": prod_id,
+                "para_all": mother_para_all,
+                "para_16": random.randint(400, mother_para_all // 2),
+                "para_13": random.randint(200, mother_para_all // 3),
+                "para_9": random.randint(100, mother_para_all // 4),
+                "para_5": random.randint(50, mother_para_all // 5),
+                "ctn_desc": f"Mother Container for {prod_id}",
+                "total_recipe": random.randint(10, 25),
+                "avail_recipe": random.randint(5, 20)
+            }
         # Calculate percentages
         mother_summary_row["para_16_percent"] = round((mother_summary_row["para_16"] / mother_para_all) * 100, 2)
         mother_summary_row["para_13_percent"] = round((mother_summary_row["para_13"] / mother_para_all) * 100, 2)
         mother_summary_row["para_9_percent"] = round((mother_summary_row["para_9"] / mother_para_all) * 100, 2)
         mother_summary_row["para_5_percent"] = round((mother_summary_row["para_5"] / mother_para_all) * 100, 2)
-        mother_summary_row["avail_recipe_percent"] = round((mother_summary_row["avail_recipe"] / mother_summary_row["total_recipe"]) * 100, 2)
+        if not is_fac_others:
+            mother_summary_row["avail_recipe_percent"] = round((mother_summary_row["avail_recipe"] / mother_summary_row["total_recipe"]) * 100, 2)
         summary_data["mother_normal_summary"].append(mother_summary_row)
         
         # Only sample summary - lowest values
         sample_para_all = random.randint(1000, 3000)
-        sample_summary_row = {
-            "prod_id": prod_id,
-            "para_all": sample_para_all,
-            "para_16": random.randint(200, sample_para_all // 2),
-            "para_13": random.randint(100, sample_para_all // 3),
-            "para_9": random.randint(50, sample_para_all // 4),
-            "para_5": random.randint(25, sample_para_all // 5),
-            "ctn_desc": f"Sample Container for {prod_id}",
-            "total_recipe": random.randint(5, 15),
-            "avail_recipe": random.randint(2, 12)
-        }
+        if is_fac_others:
+            # FacOthers format
+            sample_summary_row = {
+                "prod_id": prod_id,
+                "para_16": random.randint(200, sample_para_all // 2),
+                "para_13": random.randint(100, sample_para_all // 3),
+                "para_5": random.randint(25, sample_para_all // 5),
+                "para_9": random.randint(50, sample_para_all // 4),
+                "para_all": sample_para_all,
+                "para_16_percent": 0,  # Will calculate below
+                "para_13_percent": 0,
+                "para_9_percent": 0,
+                "para_5_percent": 0,
+                "ctn_desc": f"Sample Container for {prod_id}",
+                "avail_recipe": random.randint(2, 12)
+            }
+        else:
+            # R3 format
+            sample_summary_row = {
+                "prod_id": prod_id,
+                "para_all": sample_para_all,
+                "para_16": random.randint(200, sample_para_all // 2),
+                "para_13": random.randint(100, sample_para_all // 3),
+                "para_9": random.randint(50, sample_para_all // 4),
+                "para_5": random.randint(25, sample_para_all // 5),
+                "ctn_desc": f"Sample Container for {prod_id}",
+                "total_recipe": random.randint(5, 15),
+                "avail_recipe": random.randint(2, 12)
+            }
         # Calculate percentages
         sample_summary_row["para_16_percent"] = round((sample_summary_row["para_16"] / sample_para_all) * 100, 2)
         sample_summary_row["para_13_percent"] = round((sample_summary_row["para_13"] / sample_para_all) * 100, 2)
         sample_summary_row["para_9_percent"] = round((sample_summary_row["para_9"] / sample_para_all) * 100, 2)
         sample_summary_row["para_5_percent"] = round((sample_summary_row["para_5"] / sample_para_all) * 100, 2)
-        sample_summary_row["avail_recipe_percent"] = round((sample_summary_row["avail_recipe"] / sample_summary_row["total_recipe"]) * 100, 2)
+        if not is_fac_others:
+            sample_summary_row["avail_recipe_percent"] = round((sample_summary_row["avail_recipe"] / sample_summary_row["total_recipe"]) * 100, 2)
         summary_data["only_sample_summary"].append(sample_summary_row)
     
     return summary_data
@@ -738,13 +836,14 @@ def generate_all_recipe_list(prod_ids, recipe_ids=None):
     return all_parameters
 
 
-def generate_weekly_data(category_data, num_weeks=8):
+def generate_weekly_data(category_data, num_weeks=8, is_fac_others=False):
     """
     Generates weekly data structure with nested dictionaries.
     
     Args:
         category_data (dict): Data containing category and prod_ids
         num_weeks (int): Number of weeks to generate data for
+        is_fac_others (bool): If True, generate facOthers-specific columns only.
         
     Returns:
         dict: Weekly data with date keys and nested data
@@ -764,14 +863,14 @@ def generate_weekly_data(category_data, num_weeks=8):
         date_key = week_monday.strftime("%Y-%m-%d")
         
         # Generate data for this week
-        rcp_info = generate_recipe_info_data(category_data["prod_ids"])
+        rcp_info = generate_recipe_info_data(category_data["prod_ids"], is_fac_others=is_fac_others)
         # Extract recipe IDs for matching
         recipe_ids = rcp_info.get("all_recipe_ids", [])
         
         weekly_data[date_key] = {
             "rcp_info": rcp_info,
             "summary": generate_summary_data(category_data["prod_ids"]),
-            "summary_by_category": generate_summary_data_by_category(category_data["prod_ids"]),
+            "summary_by_category": generate_summary_data_by_category(category_data["prod_ids"], is_fac_others=is_fac_others),
             "all_recipe_list": generate_all_recipe_list(category_data["prod_ids"], recipe_ids),
             "week_number": week + 1,
             "category": category_data["category"]

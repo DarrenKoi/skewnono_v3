@@ -27,6 +27,7 @@ if data_source == 'real':
 else:
     from .dummy import meas_hist
     from .dummy import recipe_open_data
+    from .dummy import recipe_list
 
 @recipe_search_bp.route('/<fac_id>/<tool_category>/recipe-open/<recipe_id>', methods=['GET'])
 def get_recipe_open_data(fac_id, tool_category, recipe_id):
@@ -39,6 +40,28 @@ def get_recipe_open_data(fac_id, tool_category, recipe_id):
                 'success': True,
                 'data': data
             })
+        else:
+            # Real data implementation would go here
+            return jsonify({
+                'success': False,
+                'error': 'Real data source not implemented'
+            }), 501
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@recipe_search_bp.route('/<fac_id>/<tool_category>', methods=['GET'])
+def get_recipe_list(fac_id, tool_category):
+    """Get recipe list for a specific facility and tool category"""
+    try:
+        if data_source == 'dummy':
+            # Get dummy recipe list
+            data = recipe_list.get_recipe_list_response(fac_id, tool_category)
+            print(data)
+            return jsonify(data)
         else:
             # Real data implementation would go here
             return jsonify({

@@ -11,7 +11,8 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <Card v-for="tool in toolCategories" :key="tool.id" :class="{
         'cursor-pointer transition-all duration-200 hover:shadow-lg': tool.active,
-        'opacity-50 cursor-not-allowed': !tool.active
+        'opacity-50 cursor-not-allowed': !tool.active,
+        'ring-2 ring-primary-500': selectedTool === tool.id
       }" @click="tool.active ? selectTool(tool.id) : null">
         <template #content>
           <div class="text-center p-4">
@@ -45,15 +46,47 @@
         </template>
       </Card>
     </div>
+
+    <!-- Feature Selection Section -->
+    <div v-if="selectedTool" class="mt-12">
+      <div class="flex flex-col items-start gap-2 mb-8">
+        <div class="text-surface-900 dark:text-surface-0 font-semibold text-2xl">
+          {{ getSelectedToolName() }} Recipe 기능 선택
+        </div>
+        <div class="text-surface-500 dark:text-surface-300 text-lg">
+          원하는 기능을 선택하고 Recipe를 검색하세요
+        </div>
+      </div>
+      
+      <RecipeFeatureSelector 
+        :tool-type="selectedTool" 
+        :recipe-list="recipeList?.recipe_list || []"
+        :is-loading="isLoadingRecipes"
+        :error="recipeError"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import Card from 'primevue/card'
+import RecipeFeatureSelector from './components/RecipeFeatureSelector.vue'
+import { useRecipeList } from '@/services/recipeService'
 
 const route = useRoute()
-const router = useRouter()
+const selectedTool = ref(null)
+
+// Get facility ID from route
+const facId = computed(() => route.params.fac_id || 'R3')
+
+// Fetch recipe list when tool is selected
+const { 
+  data: recipeList, 
+  isLoading: isLoadingRecipes, 
+  error: recipeError 
+} = useRecipeList(facId, selectedTool)
 
 const toolCategories = [
   {
@@ -92,13 +125,15 @@ const toolCategories = [
   }
 ]
 
-// Select a tool and navigate to its dedicated page
+// Select a tool and show feature selector below
 const selectTool = (toolId) => {
-  const facId = route.params.fac_id || 'R3'
-  router.push({
-    path: `/${facId}/recipe-search/${toolId}`,
-    query: route.query
-  })
+  selectedTool.value = toolId
+}
+
+// Get selected tool name
+const getSelectedToolName = () => {
+  const tool = toolCategories.find(t => t.id === selectedTool.value)
+  return tool ? tool.name : ''
 }
 </script>
 

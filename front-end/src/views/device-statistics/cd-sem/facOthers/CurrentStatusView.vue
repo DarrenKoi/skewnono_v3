@@ -1,11 +1,11 @@
 <template>
   <div class="current-status bg-surface-50 dark:bg-surface-950 px-6 py-20 md:px-12 xl:px-20">
     <div class="flex flex-col items-start gap-4 mb-8">
-      <Button icon="pi pi-arrow-left" label="Back to Device Statistics" outlined size="large" class="mb-2" @click="goBack" />
+      <Button icon="pi pi-arrow-left" label="디바이스 통계로 돌아가기" outlined size="large" class="mb-2" @click="goBack" />
       <div class="flex flex-col gap-2">
-        <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Current Status</div>
+        <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">현재 상황</div>
         <div class="text-surface-500 dark:text-surface-300 text-lg">
-          View parameter distribution based on latest data for facility {{ facId }}
+          {{ facId }} 시설의 최신 데이터 기준 파라미터 분포를 확인합니다
         </div>
       </div>
     </div>
@@ -14,14 +14,14 @@
     <div v-if="loading" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
       <div class="text-center py-12">
         <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
-        <p class="mt-4 text-surface-600 dark:text-surface-300">Loading data...</p>
+        <p class="mt-4 text-surface-600 dark:text-surface-300">데이터를 불러오는 중...</p>
       </div>
     </div>
 
     <!-- Category Selection Section -->
     <div v-if="!loading" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
       <div class="mb-4">
-        <h2 class="text-xl font-semibold mb-2">Category Selection</h2>
+        <h2 class="text-xl font-semibold mb-2">카테고리 선택</h2>
         <div class="flex flex-wrap gap-2">
           <Button v-for="category in categories" :key="category.key" @click="onCategorySelect(category.key)"
             :label="category.label" :severity="selectedCategory === category.key ? 'primary' : 'secondary'"
@@ -35,7 +35,7 @@
       class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
       <div class="text-center py-12">
         <i class="pi pi-chart-bar text-6xl text-surface-400 mb-4"></i>
-        <p class="text-surface-600 dark:text-surface-300 text-lg">Select a category above to view charts</p>
+        <p class="text-surface-600 dark:text-surface-300 text-lg">위에서 카테고리를 선택하면 차트가 표시됩니다</p>
       </div>
     </div>
 
@@ -43,9 +43,9 @@
     <div v-if="selectedCategory && !loading && chartReady"
       class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
       <div class="mb-6">
-        <h2 class="text-2xl font-semibold">Parameter Distribution - {{ categoryLabels[selectedCategory] }}</h2>
+        <h2 class="text-2xl font-semibold">파라미터 분포 - {{ categoryLabels[selectedCategory] }}</h2>
         <p class="text-surface-600 dark:text-surface-400 mt-1">
-          {{ latestDate ? `Date: ${latestDate}` : '' }}
+          {{ latestDate ? `날짜: ${latestDate}` : '' }}
         </p>
       </div>
 
@@ -91,18 +91,18 @@ const { data: allDeviceData, isLoading: loading } = useQuery(deviceStatisticsQue
 
 // Categories for filtering
 const categories = ref([
-  { key: 'all', label: 'All' },
-  { key: 'only_normal', label: 'Only Normal' },
-  { key: 'mother_normal', label: 'Mother Normal' },
-  { key: 'only_sample', label: 'Only Sample' }
+  { key: 'all', label: '전체' },
+  { key: 'only_normal', label: '일반만' },
+  { key: 'mother_normal', label: '마더 일반' },
+  { key: 'only_sample', label: '샘플만' }
 ])
 
 // Category labels for display
 const categoryLabels = {
-  'all': 'All Categories',
-  'only_normal': 'Only Normal',
-  'mother_normal': 'Mother Normal',
-  'only_sample': 'Only Sample'
+  'all': '전체 카테고리',
+  'only_normal': '일반만',
+  'mother_normal': '마더 일반',
+  'only_sample': '샘플만'
 }
 
 // Get facility selections from sessionStorage

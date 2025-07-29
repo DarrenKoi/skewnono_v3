@@ -89,36 +89,8 @@ const router = createRouter({
       component: () => import('../views/recipe-search/RecipeSearchView.vue'),
       meta: { requiresFab: true },
     },
-    {
-      path: '/:fac_id/recipe-search/:tool',
-      name: 'recipe-search-tool',
-      component: () => import('../views/recipe-search/RecipeSearchView.vue'),
-      meta: { requiresFab: true },
-    },
-    {
-      path: '/:fac_id/recipe-search/cd-sem',
-      name: 'recipe-search-cd-sem',
-      component: () => import('../views/recipe-search/cd-sem/CdSemRecipeSearchView.vue'),
-      meta: { requiresFab: true },
-    },
-    {
-      path: '/:fac_id/recipe-search/hv-sem',
-      name: 'recipe-search-hv-sem',
-      component: () => import('../views/recipe-search/hv-sem/HvSemRecipeSearchView.vue'),
-      meta: { requiresFab: true },
-    },
-    {
-      path: '/:fac_id/recipe-search/verity',
-      name: 'recipe-search-verity',
-      component: () => import('../views/recipe-search/verity/VerityRecipeSearchView.vue'),
-      meta: { requiresFab: true },
-    },
-    {
-      path: '/:fac_id/recipe-search/provision',
-      name: 'recipe-search-provision',
-      component: () => import('../views/recipe-search/provision/ProvisionRecipeSearchView.vue'),
-      meta: { requiresFab: true },
-    },
+    // Tool-specific search views removed - now handled by main RecipeSearchView
+    // The main view now includes both tool selection and feature selection
     {
       path: '/:fac_id/recipe-search/cd-sem/open',
       name: 'recipe-open',
