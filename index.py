@@ -1,4 +1,4 @@
-import logging
+import os
 import atexit
 from flask import Flask, request, redirect
 from flask_cors import CORS
@@ -7,32 +7,9 @@ from api.routes import api_bp
 from api.equipment_status.routes import equipment_status_bp
 from api.device_statistics.routes import device_statistics_bp
 from api.recipe_search.routes import recipe_search_bp
-
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-
-# TODO: Move scheduler creation and configuration to a dedicated module.
-def create_scheduler():
-    """
-    Creates and returns a scheduler instance.
-    This is a placeholder. The actual implementation should initialize
-    and configure APScheduler or another scheduling library.
-    """
-    class MockScheduler:
-        @staticmethod
-        def start():
-            logger.info("Mock scheduler started.")
-        @staticmethod
-        def shutdown(wait=True):
-            logger.info("Mock scheduler shutdown.")
-            # Note: wait parameter included for API compatibility but not used in mock
-    return MockScheduler()
+from api.utils.app_logger import logger, cleanup_logger
+from api.utils.scheduler import scheduler_manager, get_scheduler
+from api.scheduled_tasks import register_scheduled_tasks
 
 
 def create_app():
@@ -70,23 +47,36 @@ def create_app():
 
 def setup_scheduler(app):
     """
-    Simplified scheduler setup.
-    Initializes and starts the scheduler.
+    Initialize and configure the APScheduler.
     """
-    # TODO: In a production environment with multiple workers (e.g., uWSGI),
-    # ensure this only runs in a single process to avoid duplicate jobs.
+    # In production with uWSGI, check if we're in the main worker
+    # to avoid duplicate scheduled tasks
     try:
-        scheduler = create_scheduler()
-        scheduler.start()
-
-        # Shutdown scheduler when app stops
-        atexit.register(lambda: scheduler.shutdown(wait=False))
-
+        import uwsgi
+        # Only initialize scheduler in the first worker
+        if uwsgi.worker_id() != 1:
+            logger.info(f"Skipping scheduler initialization in worker {uwsgi.worker_id()}")
+            return None
+    except ImportError:
+        # Not running under uWSGI (development mode)
+        pass
+    
+    try:
+        # Initialize the scheduler
+        scheduler = scheduler_manager.init_scheduler()
+        
+        # Register all scheduled tasks
+        register_scheduled_tasks()
+        
+        # Store scheduler reference in app
         app.scheduler = scheduler
-        logger.info("Scheduler initialized.")
+        
+        logger.success("Scheduler setup completed",
+                     jobs_count=len(scheduler.get_jobs()))
+        
         return scheduler
     except Exception as e:
-        logger.error(f"Failed to initialize scheduler: {e}")
+        logger.exception("Failed to setup scheduler")
         app.scheduler = None
         return None
 
@@ -98,4 +88,6 @@ setup_scheduler(application)
 if __name__ == '__main__':
     # Development mode (not uWSGI)
     setup_scheduler(application)
+    # Register cleanup on exit
+    atexit.register(cleanup_logger)
     application.run(host='0.0.0.0', port=5000, debug=True)

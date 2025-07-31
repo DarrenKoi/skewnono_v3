@@ -45,8 +45,7 @@ class LoggerManager:
                  enable_print_redirect: bool = False,
                  enable_exception_logging: bool = True,
                  custom_format: Optional[str] = None,
-                 serialize: bool = False,
-                 colorize: Optional[bool] = None,  # None means auto-detect based on mode
+                 colorize: Optional[bool] = None,  # None means True
                  backtrace: Optional[bool] = None,
                  diagnose: Optional[bool] = None,
                  catch_exceptions: bool = True,
@@ -74,10 +73,10 @@ class LoggerManager:
         self.enable_print_redirect = enable_print_redirect
         self.enable_exception_logging = enable_exception_logging
         self.custom_format = custom_format
-        self.serialize = serialize
 
-        # Auto-detect colorize based on mode if not specified
-        self.colorize = colorize if colorize is not None else self.is_dev
+        # Simplified: Always use colors for console output
+        # ANSI codes are ignored by non-supporting terminals
+        self.colorize = colorize if colorize is not None else True
 
         # Dev mode defaults for debugging features
         self.backtrace = backtrace if backtrace is not None else self.is_dev
@@ -101,34 +100,36 @@ class LoggerManager:
         # Remove default handlers
         logger.remove()
 
-        # Console output
-        if self.is_dev or self.colorize or not self.is_prod:
-            console_format = self.custom_format or (
-                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-                "<level>{level:<5}</level> | "
-                "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-                "<level>{message}</level>"
-            )
+        # Console output - always enabled with colors
+        console_format = self.custom_format or (
+            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+            "<level>{level:<5}</level> | "
+            "<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+            "<level>{message}</level>"
+        )
 
-            handler_id = logger.add(
-                sys.stdout,
-                level=self.console_level,
-                format=console_format,
-                colorize=self.colorize,
-                backtrace=self.backtrace,
-                diagnose=self.diagnose,
-                filter=self.filter_func
-            )
-            self._handler_ids.append(handler_id)
+        handler_id = logger.add(
+            sys.stdout,
+            level=self.console_level,
+            format=console_format,
+            colorize=True,  # Always true now
+            backtrace=self.backtrace,
+            diagnose=self.diagnose,
+            filter=self.filter_func
+        )
+        self._handler_ids.append(handler_id)
 
         # Create log directory if it doesn't exist
         self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # File logging format
         if self.json_format:
-            log_format = self._json_formatter
+            # Use serialize=True instead of custom formatter for JSON
+            log_format = "{message}"
+            file_serialize = True
         else:
-            log_format = self.custom_format or "{time:YYYY-MM-DD HH:mm:ss} | {level:<5} | {name}:{function}:{line} - {message}"
+            log_format = self.custom_format or "{time:YYYY-MM-DD HH:mm:ss} | {level:<5} | {function}:{line} - {message}"
+            file_serialize = False
 
         # Add file handler
         handler_id = logger.add(
@@ -140,7 +141,7 @@ class LoggerManager:
             backtrace=self.backtrace,
             diagnose=self.diagnose,
             enqueue=True,  # Thread-safe
-            serialize=self.serialize,
+            serialize=file_serialize,  # Use JSON serialization if json_format is True
             filter=self.filter_func
         )
         self._handler_ids.append(handler_id)
@@ -160,41 +161,6 @@ class LoggerManager:
         if self.enable_exception_logging:
             self._setup_exception_logging()
 
-    def _json_formatter(self, record):
-        """
-        Custom JSON formatter for structured logging.
-
-        Args:
-            record: Loguru record object
-
-        Returns:
-            JSON formatted log entry
-        """
-        log_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "level": record["level"].name,
-            "logger": record["name"],
-            "function": record["function"],
-            "line": record["line"],
-            "message": record["message"],
-            "module": record["module"],
-            "process": record["process"].id,
-            "thread": record["thread"].id,
-        }
-
-        # Add extra fields if present
-        if record["extra"]:
-            log_entry["extra"] = record["extra"]
-
-        # Add exception info if present
-        if record["exception"]:
-            log_entry["exception"] = {
-                "type": record["exception"].type.__name__,
-                "value": str(record["exception"].value),
-                "traceback": record["exception"].traceback.format()
-            }
-
-        return json.dumps(log_entry) + "\n"
 
     def _redirect_print(self):
         """Redirect print statements to logger."""
@@ -382,13 +348,12 @@ class LogConfigs:
             retention="3 days",
             rotation="100 MB",
             mode="dev",
-            enable_print_redirect=True,
-            colorize=True
+            enable_print_redirect=True
         )
 
     @staticmethod
     def production():
-        """Production configuration with JSON formatting."""
+        """Production configuration with JSON formatting for files."""
         return LoggerManager(
             log_name="app_prod",
             log_file_path="logs/prod.log",
@@ -397,8 +362,9 @@ class LogConfigs:
             retention="30 days",
             rotation="1 GB",
             mode="prod",
-            json_format=True,
-            colorize=False
+            json_format=True,  # JSON for file logs
+            backtrace=True,  # Include backtrace for debugging
+            diagnose=False  # Don't include local variables in prod
         )
 
     @staticmethod
@@ -411,8 +377,7 @@ class LogConfigs:
             console_level="DEBUG",
             retention="1 day",
             rotation="50 MB",
-            mode="dev",
-            serialize=True
+            mode="dev"
         )
 
     @staticmethod
@@ -423,8 +388,7 @@ class LogConfigs:
             level="INFO",
             retention="7 days",
             rotation="10 MB",
-            mode="prod",
-            colorize=False
+            mode="prod"
         )
 
 

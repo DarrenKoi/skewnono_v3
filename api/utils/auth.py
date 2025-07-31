@@ -3,11 +3,9 @@ Authentication and authorization utilities
 """
 from flask import request, jsonify
 from functools import wraps
-import logging
 import platform
 import os
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 def is_development_environment():
     """

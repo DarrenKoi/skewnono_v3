@@ -18,7 +18,9 @@
       "Bash(move:*)",
       "Bash(npm run lint:*)",
       "Bash(cp:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(del test_logging.py)",
+      "Bash(pip install:*)"
     ],
     "deny": []
   },
