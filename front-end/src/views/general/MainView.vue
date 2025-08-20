@@ -12,7 +12,7 @@
               <p class="text-sm text-amber-700 dark:text-amber-400 mb-3">
                 Please select your fabrication facility to access this feature
               </p>
-              <Select v-model="localSelectedFab" :options="fabList" placeholder="Select Fab" class="w-full"
+              <Select v-model="localSelectedFab" :options="fabStore.fabList" placeholder="Select Fab" class="w-full"
                 @change="handleFabChange" />
             </div>
             <button @click="showFabAlert = false"

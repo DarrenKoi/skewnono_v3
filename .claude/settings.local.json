@@ -20,9 +20,13 @@
       "Bash(cp:*)",
       "Bash(grep:*)",
       "Bash(del test_logging.py)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(venvScripts:*)"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "C:\\mnt\\c\\Code"
+    ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

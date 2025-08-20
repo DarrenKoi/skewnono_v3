@@ -3,11 +3,11 @@
     <div class="flex flex-col items-start gap-4 mb-8">
       <Button 
         icon="pi pi-arrow-left" 
-        label="Recipe 검색으로 돌아가기"
+        label="Recipe 선택으로 돌아가기"
         outlined
         size="large"
         class="mb-2"
-        @click="$router.push({ name: 'recipe-search' })" 
+        @click="goBackToRecipeSearch()" 
       />
       <div class="flex flex-col gap-2">
         <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">횡전개 체크</div>
@@ -15,30 +15,44 @@
       </div>
     </div>
 
-    <!-- Content Display -->
-    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <div class="flex flex-col gap-6">
-        <!-- Selected Recipe Display -->
-        <div class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">선택된 Recipe</label>
-          <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-3 border">
-            <p class="text-surface-700 dark:text-surface-200">
-              {{ selectedRecipe || 'Recipe 검색 페이지에서 선택하세요' }}
-            </p>
+    <!-- Recipe Search Bar -->
+    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <label class="text-surface-900 dark:text-surface-0 font-semibold">Recipe 검색</label>
+          <div v-if="selectedRecipe" class="flex items-center gap-2">
+            <span class="text-surface-500 dark:text-surface-400 text-sm">현재 선택:</span>
+            <Tag :value="selectedRecipe" severity="success" />
           </div>
         </div>
-
-        <!-- Action Button -->
-        <div class="flex pt-4">
+        <div class="flex gap-3">
+          <AutoComplete 
+            v-model="selectedRecipe" 
+            :suggestions="filteredRecipes"
+            :forceSelection="true"
+            @complete="searchRecipe"
+            placeholder="횡전개 체크할 Recipe를 입력하세요..."
+            class="flex-1"
+            :dropdown="true"
+            :minLength="1"
+          />
           <Button 
             label="횡전개 체크 실행"
             icon="pi pi-check-square"
             @click="checkHorizontalDeploy"
             :disabled="!selectedRecipe"
             :loading="isChecking"
-            class="w-full sm:w-auto"
           />
         </div>
+        <small class="text-surface-500 dark:text-surface-400">
+          * Recipe를 검색하고 선택하여 횡전개 여부와 버전을 체크하세요
+        </small>
+      </div>
+    </div>
+
+    <!-- Content Display -->
+    <div v-if="checkResult" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+      <div class="flex flex-col gap-6">
 
         <!-- Selected Recipe Info -->
         <div v-if="selectedRecipe" class="bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
@@ -106,23 +120,49 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AutoComplete from 'primevue/autocomplete'
+import Tag from 'primevue/tag'
 
+const route = useRoute()
+const router = useRouter()
 const selectedRecipe = ref(null)
 const actionResult = ref(null)
 const checkResults = ref(null)
+const checkResult = ref(null)
 const isChecking = ref(false)
+const filteredRecipes = ref([])
 
-// Load selected recipe from sessionStorage and auto-execute if present
-onMounted(() => {
-  const storedRecipe = sessionStorage.getItem('selectedRecipe')
-  if (storedRecipe) {
-    selectedRecipe.value = storedRecipe
-    sessionStorage.removeItem('selectedRecipe')
-    // Auto-execute the action
-    checkHorizontalDeploy()
-  }
-})
+// Sample recipe data - replace with actual API call
+const recipeDatabase = [
+  'RECIPE_001_STANDARD',
+  'RECIPE_002_ADVANCED',
+  'RECIPE_003_CUSTOM',
+  'RECIPE_004_TEST',
+  'RECIPE_005_PRODUCTION',
+  'RECIPE_006_SPECIAL',
+  'RECIPE_007_MAINTENANCE',
+  'RECIPE_008_CALIBRATION',
+  'RECIPE_009_VALIDATION',
+  'RECIPE_010_EMERGENCY'
+]
+
+// Recipe search functionality
+const searchRecipe = (event) => {
+  const query = event.query.toLowerCase()
+  filteredRecipes.value = recipeDatabase.filter(recipe => 
+    recipe.toLowerCase().includes(query)
+  )
+}
+
+// Go back to recipe search with CD-SEM pre-selected
+const goBackToRecipeSearch = () => {
+  // Store that CD-SEM was selected
+  sessionStorage.setItem('selectedTool', 'cd-sem')
+  const facId = route.params.fac_id || 'R3'
+  router.push(`/${facId}/recipe-search`)
+}
 
 // Action: Check Horizontal Deploy
 const checkHorizontalDeploy = async () => {
@@ -130,6 +170,7 @@ const checkHorizontalDeploy = async () => {
   
   isChecking.value = true
   checkResults.value = null
+  checkResult.value = true // Show results section
   
   actionResult.value = {
     severity: 'info',

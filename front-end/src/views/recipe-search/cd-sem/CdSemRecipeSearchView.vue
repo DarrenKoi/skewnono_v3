@@ -40,84 +40,29 @@
       </div>
     </div>
     
-    <!-- Context-aware Search Bar -->
-    <div v-if="selectedSearchType !== null" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <div class="flex flex-col gap-6">
-        <!-- Recipe Search Input -->
-        <div class="flex flex-col gap-3">
-          <AutoComplete 
-            v-model="selectedRecipe" 
-            :suggestions="filteredRecipes"
-            :forceSelection="true"
-            @complete="searchRecipe"
-            :placeholder="getSearchPlaceholder()"
-            class="w-full"
-            :dropdown="true"
-            :minLength="1"
-          />
-          <small class="text-surface-500 dark:text-surface-400">
-            * {{ getSearchDescription() }}
-          </small>
-        </div>
-        
-        <!-- Additional Fields based on search type -->
-        <div v-if="selectedSearchType === 2 && selectedRecipe" class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">기간 선택</label>
-          <Calendar 
-            v-model="dateRange" 
-            selectionMode="range" 
-            :manualInput="false" 
-            dateFormat="yy/mm/dd"
-            placeholder="날짜 범위 선택"
-            showIcon
-            class="w-full sm:w-auto"
-          />
-        </div>
-        
-        <!-- Action Button -->
-        <div v-if="selectedSearchType !== null" class="flex pt-4">
-          <Button 
-            :label="getActionLabel()"
-            :icon="getActionIcon()"
-            @click="executeAction"
-            :disabled="!canExecuteAction"
-            class="w-full sm:w-auto"
-          />
-        </div>
-      </div>
+    <!-- Confirm Button -->
+    <div v-if="selectedSearchType !== null" class="flex justify-center mt-8">
+      <Button 
+        label="확인"
+        icon="pi pi-check"
+        @click="navigateToSelectedPage"
+        size="large"
+        class="px-8"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Button from 'primevue/button'
-import AutoComplete from 'primevue/autocomplete'
-import Calendar from 'primevue/calendar'
 
 const router = useRouter()
 const route = useRoute()
 
-// Search-related reactive data
+// Search type selection
 const selectedSearchType = ref(null)
-const selectedRecipe = ref(null)
-const filteredRecipes = ref([])
-const dateRange = ref(null)
-
-// Sample recipe data - replace with actual API call
-const recipeDatabase = [
-  'RECIPE_001_STANDARD',
-  'RECIPE_002_ADVANCED',
-  'RECIPE_003_CUSTOM',
-  'RECIPE_004_TEST',
-  'RECIPE_005_PRODUCTION',
-  'RECIPE_006_SPECIAL',
-  'RECIPE_007_MAINTENANCE',
-  'RECIPE_008_CALIBRATION',
-  'RECIPE_009_VALIDATION',
-  'RECIPE_010_EMERGENCY'
-]
 
 // Recipe options configuration
 const recipeOptions = [
@@ -147,79 +92,7 @@ const recipeOptions = [
 // Search type selection
 const selectSearchType = (index) => {
   selectedSearchType.value = index
-  selectedRecipe.value = null
-  
-  // Set default date range for measurement history (1 month from today)
-  if (index === 2) {
-    const today = new Date()
-    const oneMonthAgo = new Date()
-    oneMonthAgo.setMonth(today.getMonth() - 1)
-    dateRange.value = [oneMonthAgo, today]
-  } else {
-    dateRange.value = null
-  }
 }
-
-// Recipe search functionality
-const searchRecipe = (event) => {
-  const query = event.query.toLowerCase()
-  filteredRecipes.value = recipeDatabase.filter(recipe => 
-    recipe.toLowerCase().includes(query)
-  )
-}
-
-// Get search placeholder based on selected type
-const getSearchPlaceholder = () => {
-  if (selectedSearchType.value === null) return ''
-  const placeholders = {
-    0: 'Recipe 이름을 입력하세요...',
-    1: '횡전개 체크할 Recipe를 입력하세요...',
-    2: '측정 기록을 조회할 Recipe를 입력하세요...'
-  }
-  return placeholders[selectedSearchType.value] || 'Recipe 이름을 입력하세요...'
-}
-
-// Get search description based on selected type
-const getSearchDescription = () => {
-  if (selectedSearchType.value === null) return ''
-  const descriptions = {
-    0: 'Recipe를 검색하고 선택하여 설정 상태를 확인하세요',
-    1: 'Recipe를 검색하고 선택하여 횡전개 여부와 버전을 체크하세요',
-    2: 'Recipe를 검색하고 선택한 후 기간을 설정하여 측정 기록을 조회하세요'
-  }
-  return descriptions[selectedSearchType.value] || ''
-}
-
-// Get action label based on selected type
-const getActionLabel = () => {
-  if (selectedSearchType.value === null) return ''
-  const labels = {
-    0: 'Recipe 열기',
-    1: '횡전개 체크 실행',
-    2: '측정 기록 조회'
-  }
-  return labels[selectedSearchType.value] || ''
-}
-
-// Get action icon based on selected type
-const getActionIcon = () => {
-  if (selectedSearchType.value === null) return ''
-  const icons = {
-    0: 'pi pi-external-link',
-    1: 'pi pi-check-square',
-    2: 'pi pi-history'
-  }
-  return icons[selectedSearchType.value] || ''
-}
-
-// Check if action can be executed
-const canExecuteAction = computed(() => {
-  if (selectedSearchType.value === null || !selectedRecipe.value) return false
-  if (selectedSearchType.value === 2) {
-    return dateRange.value && dateRange.value.length === 2
-  }
-  return true
-})
 
 // Go back to tool selection
 const goBackToToolSelection = () => {
@@ -227,18 +100,12 @@ const goBackToToolSelection = () => {
   router.push(`/${facId}/recipe-search`)
 }
 
-// Execute action by navigating to sub-route
-const executeAction = () => {
-  if (!canExecuteAction.value) return
+// Navigate to selected page
+const navigateToSelectedPage = () => {
+  if (selectedSearchType.value === null) return
   
   const option = recipeOptions[selectedSearchType.value]
   if (option.route) {
-    // Store the selected recipe and date range in sessionStorage for the target page
-    sessionStorage.setItem('selectedRecipe', selectedRecipe.value)
-    if (dateRange.value) {
-      sessionStorage.setItem('dateRange', JSON.stringify(dateRange.value))
-    }
-    
     // Navigate to the sub-route
     router.push({ name: option.route })
   }

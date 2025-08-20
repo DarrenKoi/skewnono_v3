@@ -31,67 +31,15 @@
       </div>
     </div>
     
-    <!-- Context-aware Search Bar -->
-    <div v-if="selectedSearchType !== null" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <div class="flex flex-col gap-6">
-        <!-- Loading State -->
-        <div v-if="isLoading" class="flex items-center justify-center py-8">
-          <i class="pi pi-spinner pi-spin text-2xl text-primary"></i>
-          <span class="ml-3 text-surface-600 dark:text-surface-400">Recipe 목록을 불러오는 중...</span>
-        </div>
-        
-        <!-- Error State -->
-        <div v-else-if="error" class="flex items-center justify-center py-8 text-red-500">
-          <i class="pi pi-exclamation-triangle text-2xl"></i>
-          <span class="ml-3">Recipe 목록을 불러오는데 실패했습니다.</span>
-        </div>
-        
-        <!-- Recipe Search Input -->
-        <div v-else class="flex flex-col gap-3">
-          <AutoComplete 
-            v-model="selectedRecipe" 
-            :suggestions="filteredRecipes"
-            :forceSelection="true"
-            @complete="searchRecipe"
-            :placeholder="getSearchPlaceholder()"
-            class="w-full"
-            :dropdown="true"
-            :minLength="1"
-            :disabled="recipeDatabase.length === 0"
-          />
-          <small class="text-surface-500 dark:text-surface-400">
-            * {{ getSearchDescription() }}
-            <span v-if="recipeDatabase.length === 0" class="text-orange-500">
-              (사용 가능한 Recipe가 없습니다)
-            </span>
-          </small>
-        </div>
-        
-        <!-- Additional Fields based on search type -->
-        <div v-if="recipeOptions[selectedSearchType]?.route === 'measurement-history' && selectedRecipe" class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">기간 선택</label>
-          <Calendar 
-            v-model="dateRange" 
-            selectionMode="range" 
-            :manualInput="false" 
-            dateFormat="yy/mm/dd"
-            placeholder="날짜 범위 선택"
-            showIcon
-            class="w-full sm:w-auto"
-          />
-        </div>
-        
-        <!-- Action Button -->
-        <div v-if="selectedSearchType !== null && !isLoading && !error" class="flex pt-4">
-          <Button 
-            :label="getActionLabel()"
-            :icon="getActionIcon()"
-            @click="executeAction"
-            :disabled="!canExecuteAction || recipeDatabase.length === 0"
-            class="w-full sm:w-auto"
-          />
-        </div>
-      </div>
+    <!-- Confirm Button -->
+    <div v-if="selectedSearchType !== null" class="flex justify-center mt-8">
+      <Button 
+        label="확인"
+        icon="pi pi-check"
+        @click="navigateToSelectedPage"
+        size="large"
+        class="px-8"
+      />
     </div>
   </div>
 </template>
@@ -100,8 +48,6 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Button from 'primevue/button'
-import AutoComplete from 'primevue/autocomplete'
-import Calendar from 'primevue/calendar'
 
 const props = defineProps({
   toolType: {
@@ -128,12 +74,6 @@ const route = useRoute()
 
 // Search-related reactive data
 const selectedSearchType = ref(null)
-const selectedRecipe = ref(null)
-const filteredRecipes = ref([])
-const dateRange = ref(null)
-
-// Use recipe data from props (fetched from API)
-const recipeDatabase = computed(() => props.recipeList)
 
 // Tool-specific recipe options configuration
 const toolOptionsMap = {
@@ -218,109 +158,14 @@ const selectSearchType = (index) => {
   if (option.disabled) return
   
   selectedSearchType.value = index
-  selectedRecipe.value = null
-  
-  // Set default date range for measurement history (1 month from today)
-  // Check by route name instead of index to be tool-agnostic
-  if (option.route === 'measurement-history') {
-    const today = new Date()
-    const oneMonthAgo = new Date()
-    oneMonthAgo.setMonth(today.getMonth() - 1)
-    dateRange.value = [oneMonthAgo, today]
-  } else {
-    dateRange.value = null
-  }
 }
 
-// Recipe search functionality
-const searchRecipe = (event) => {
-  const query = event.query.toLowerCase()
-  filteredRecipes.value = recipeDatabase.value.filter(recipe => 
-    recipe.toLowerCase().includes(query)
-  )
-}
-
-// Get search placeholder based on selected type
-const getSearchPlaceholder = () => {
-  if (selectedSearchType.value === null) return ''
-  const option = recipeOptions.value[selectedSearchType.value]
-  if (!option) return 'Recipe 이름을 입력하세요...'
-  
-  const placeholderMap = {
-    'open': 'Recipe 이름을 입력하세요...',
-    'horizontal-check': '횡전개 체크할 Recipe를 입력하세요...',
-    'measurement-history': '측정 기록을 조회할 Recipe를 입력하세요...'
-  }
-  return placeholderMap[option.route] || 'Recipe 이름을 입력하세요...'
-}
-
-// Get search description based on selected type
-const getSearchDescription = () => {
-  if (selectedSearchType.value === null) return ''
-  const option = recipeOptions.value[selectedSearchType.value]
-  if (!option) return ''
-  
-  const descriptionMap = {
-    'open': 'Recipe를 검색하고 선택하여 설정 상태를 확인하세요',
-    'horizontal-check': 'Recipe를 검색하고 선택하여 횡전개 여부와 버전을 체크하세요',
-    'measurement-history': 'Recipe를 검색하고 선택한 후 기간을 설정하여 측정 기록을 조회하세요'
-  }
-  return descriptionMap[option.route] || ''
-}
-
-// Get action label based on selected type
-const getActionLabel = () => {
-  if (selectedSearchType.value === null) return ''
-  const option = recipeOptions.value[selectedSearchType.value]
-  if (!option) return ''
-  
-  const labelMap = {
-    'open': 'Recipe 열기',
-    'horizontal-check': '횡전개 체크 실행',
-    'measurement-history': '측정 기록 조회'
-  }
-  return labelMap[option.route] || ''
-}
-
-// Get action icon based on selected type
-const getActionIcon = () => {
-  if (selectedSearchType.value === null) return ''
-  const option = recipeOptions.value[selectedSearchType.value]
-  if (!option) return ''
-  
-  const iconMap = {
-    'open': 'pi pi-external-link',
-    'horizontal-check': 'pi pi-check-square',
-    'measurement-history': 'pi pi-history'
-  }
-  return iconMap[option.route] || ''
-}
-
-// Check if action can be executed
-const canExecuteAction = computed(() => {
-  if (selectedSearchType.value === null || !selectedRecipe.value) return false
-  const option = recipeOptions.value[selectedSearchType.value]
-  if (!option || option.disabled) return false
-  
-  // Check if measurement history requires date range
-  if (option.route === 'measurement-history') {
-    return dateRange.value && dateRange.value.length === 2
-  }
-  return true
-})
-
-// Execute action by navigating to sub-route
-const executeAction = () => {
-  if (!canExecuteAction.value) return
+// Navigate to selected page
+const navigateToSelectedPage = () => {
+  if (selectedSearchType.value === null) return
   
   const option = recipeOptions.value[selectedSearchType.value]
   if (option && option.route && !option.disabled) {
-    // Store the selected recipe and date range in sessionStorage for the target page
-    sessionStorage.setItem('selectedRecipe', selectedRecipe.value)
-    if (dateRange.value) {
-      sessionStorage.setItem('dateRange', JSON.stringify(dateRange.value))
-    }
-    
     // Navigate to the feature view
     const facId = route.params.fac_id || 'R3'
     router.push(`/${facId}/recipe-search/${props.toolType}/${option.route}`)

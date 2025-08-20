@@ -83,11 +83,14 @@ def setup_scheduler(app):
 
 # Create application instance for uWSGI
 application = create_app()
-setup_scheduler(application)
 
+# Setup scheduler only once
 if __name__ == '__main__':
     # Development mode (not uWSGI)
     setup_scheduler(application)
     # Register cleanup on exit
     atexit.register(cleanup_logger)
     application.run(host='0.0.0.0', port=5000, debug=True)
+else:
+    # Production mode (uWSGI)
+    setup_scheduler(application)

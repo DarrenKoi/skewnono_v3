@@ -107,6 +107,14 @@ class SchedulerManager:
         """
         # Get job name from function or kwargs
         job_name = kwargs.get('name', func.__name__)
+        job_id = kwargs.get('id')
+        
+        # Check if job already exists
+        if job_id and self.scheduler.get_job(job_id):
+            logger.warning(f"Job with id '{job_id}' already exists, skipping registration",
+                          job_id=job_id,
+                          job_name=job_name)
+            return self.scheduler.get_job(job_id)
         
         # Create a wrapper that adds logging context
         def logged_job_wrapper():

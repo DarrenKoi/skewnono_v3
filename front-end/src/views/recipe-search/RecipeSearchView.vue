@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Card from 'primevue/card'
 import RecipeFeatureSelector from './components/RecipeFeatureSelector.vue'
@@ -135,6 +135,16 @@ const getSelectedToolName = () => {
   const tool = toolCategories.find(t => t.id === selectedTool.value)
   return tool ? tool.name : ''
 }
+
+// Check for stored tool selection on mount
+onMounted(() => {
+  const storedTool = sessionStorage.getItem('selectedTool')
+  if (storedTool && toolCategories.find(t => t.id === storedTool && t.active)) {
+    selectedTool.value = storedTool
+    // Clear the stored selection after using it
+    sessionStorage.removeItem('selectedTool')
+  }
+})
 </script>
 
 <style scoped>

@@ -3,11 +3,11 @@
     <div class="flex flex-col items-start gap-4 mb-8">
       <Button 
         icon="pi pi-arrow-left" 
-        label="Recipe 검색으로 돌아가기"
+        label="Recipe 선택으로 돌아가기"
         outlined
         size="large"
         class="mb-2"
-        @click="$router.push({ name: 'recipe-search' })" 
+        @click="goBackToRecipeSearch()" 
       />
       <div class="flex flex-col gap-2">
         <div class="text-surface-900 dark:text-surface-0 font-semibold text-3xl">Meas. History</div>
@@ -15,23 +15,36 @@
       </div>
     </div>
 
-    <!-- Content Display -->
-    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
-      <div class="flex flex-col gap-6">
-        <!-- Selected Recipe Display -->
-        <div class="flex flex-col gap-3">
-          <label class="text-surface-900 dark:text-surface-0 font-semibold">선택된 Recipe</label>
-          <div class="bg-surface-100 dark:bg-surface-800 rounded-lg p-3 border">
-            <p class="text-surface-700 dark:text-surface-200">
-              {{ selectedRecipe || 'Recipe 검색 페이지에서 선택하세요' }}
-            </p>
+    <!-- Recipe Search Bar -->
+    <div class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border mb-6">
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <label class="text-surface-900 dark:text-surface-0 font-semibold">Recipe 검색</label>
+          <div v-if="selectedRecipe" class="flex items-center gap-2">
+            <span class="text-surface-500 dark:text-surface-400 text-sm">현재 선택:</span>
+            <Tag :value="selectedRecipe" severity="success" />
           </div>
         </div>
-
+        <div class="flex gap-3">
+          <AutoComplete 
+            v-model="selectedRecipe" 
+            :suggestions="filteredRecipes"
+            :forceSelection="true"
+            @complete="searchRecipe"
+            placeholder="측정 기록을 조회할 Recipe를 입력하세요..."
+            class="flex-1"
+            :dropdown="true"
+            :minLength="1"
+          />
+        </div>
+        <small class="text-surface-500 dark:text-surface-400">
+          * Recipe를 검색하고 선택한 후 기간을 설정하여 측정 기록을 조회하세요
+        </small>
+        
         <!-- Date Range Selection -->
-        <div class="flex flex-col gap-3">
+        <div v-if="selectedRecipe" class="flex flex-col gap-3 pt-4 border-t">
           <label class="text-surface-900 dark:text-surface-0 font-semibold">기간 선택</label>
-          <div class="flex gap-3 flex-wrap">
+          <div class="flex gap-3 items-center flex-wrap">
             <Calendar 
               v-model="dateRange" 
               selectionMode="range" 
@@ -41,21 +54,21 @@
               showIcon
               class="w-full sm:w-auto"
             />
+            <Button 
+              label="측정 기록 조회"
+              icon="pi pi-history"
+              @click="viewMeasurementHistory"
+              :disabled="!selectedRecipe || !dateRange"
+              :loading="isLoading"
+            />
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Action Button -->
-        <div class="flex pt-4">
-          <Button 
-            label="측정 기록 조회"
-            icon="pi pi-history"
-            @click="viewMeasurementHistory"
-            :disabled="!selectedRecipe || !dateRange"
-            :loading="isLoading"
-            class="w-full sm:w-auto"
-          />
-        </div>
-
+    <!-- Content Display -->
+    <div v-if="historyData" class="bg-surface-0 dark:bg-surface-900 rounded-xl p-6 shadow-sm border">
+      <div class="flex flex-col gap-6">
         <!-- Selected Recipe Info -->
         <div v-if="selectedRecipe" class="bg-surface-100 dark:bg-surface-800 rounded-lg p-4">
           <div class="flex items-center gap-3">
@@ -146,15 +159,52 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import * as echarts from 'echarts'
+import AutoComplete from 'primevue/autocomplete'
+import Tag from 'primevue/tag'
+import Calendar from 'primevue/calendar'
 
+const route = useRoute()
+const router = useRouter()
 const selectedRecipe = ref(null)
 const actionResult = ref(null)
 const historyData = ref(null)
 const isLoading = ref(false)
 const dateRange = ref(null)
 const chartRef = ref(null)
+const filteredRecipes = ref([])
 let chartInstance = null
+
+// Sample recipe data - replace with actual API call
+const recipeDatabase = [
+  'RECIPE_001_STANDARD',
+  'RECIPE_002_ADVANCED',
+  'RECIPE_003_CUSTOM',
+  'RECIPE_004_TEST',
+  'RECIPE_005_PRODUCTION',
+  'RECIPE_006_SPECIAL',
+  'RECIPE_007_MAINTENANCE',
+  'RECIPE_008_CALIBRATION',
+  'RECIPE_009_VALIDATION',
+  'RECIPE_010_EMERGENCY'
+]
+
+// Recipe search functionality
+const searchRecipe = (event) => {
+  const query = event.query.toLowerCase()
+  filteredRecipes.value = recipeDatabase.filter(recipe => 
+    recipe.toLowerCase().includes(query)
+  )
+}
+
+// Go back to recipe search with CD-SEM pre-selected
+const goBackToRecipeSearch = () => {
+  // Store that CD-SEM was selected
+  sessionStorage.setItem('selectedTool', 'cd-sem')
+  const facId = route.params.fac_id || 'R3'
+  router.push(`/${facId}/recipe-search`)
+}
 
 // Chart option for ECharts
 const chartOption = computed(() => {
@@ -253,34 +303,14 @@ const handleResize = () => {
 }
 
 onMounted(() => {
-  const storedRecipe = sessionStorage.getItem('selectedRecipe')
-  const storedDateRange = sessionStorage.getItem('dateRange')
-  
-  let shouldAutoExecute = false
-  
-  if (storedRecipe) {
-    selectedRecipe.value = storedRecipe
-    sessionStorage.removeItem('selectedRecipe')
-    shouldAutoExecute = true
-  }
-  
-  if (storedDateRange) {
-    try {
-      const dates = JSON.parse(storedDateRange)
-      dateRange.value = dates.map(dateStr => new Date(dateStr))
-      sessionStorage.removeItem('dateRange')
-    } catch (e) {
-      console.error('Error parsing stored date range:', e)
-    }
-  }
+  // Set default date range (1 month from today)
+  const today = new Date()
+  const oneMonthAgo = new Date()
+  oneMonthAgo.setMonth(today.getMonth() - 1)
+  dateRange.value = [oneMonthAgo, today]
   
   initChart()
   window.addEventListener('resize', handleResize)
-  
-  // Auto-execute if we have stored data
-  if (shouldAutoExecute && dateRange.value) {
-    viewMeasurementHistory()
-  }
 })
 
 onUnmounted(() => {

@@ -74,9 +74,8 @@ class LoggerManager:
         self.enable_exception_logging = enable_exception_logging
         self.custom_format = custom_format
 
-        # Simplified: Always use colors for console output
-        # ANSI codes are ignored by non-supporting terminals
-        self.colorize = colorize if colorize is not None else True
+        # Console output is plain text, no colors
+        self.colorize = colorize if colorize is not None else False
 
         # Dev mode defaults for debugging features
         self.backtrace = backtrace if backtrace is not None else self.is_dev
@@ -100,19 +99,14 @@ class LoggerManager:
         # Remove default handlers
         logger.remove()
 
-        # Console output - always enabled with colors
-        console_format = self.custom_format or (
-            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-            "<level>{level:<5}</level> | "
-            "<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-            "<level>{message}</level>"
-        )
+        # Console output - plain format for both dev and prod (no colors)
+        console_format = "{time:YYYY-MM-DD HH:mm:ss} | {level:<5} | {message}"
 
         handler_id = logger.add(
             sys.stdout,
             level=self.console_level,
             format=console_format,
-            colorize=True,  # Always true now
+            colorize=False,  # No colors for console output
             backtrace=self.backtrace,
             diagnose=self.diagnose,
             filter=self.filter_func
@@ -122,13 +116,19 @@ class LoggerManager:
         # Create log directory if it doesn't exist
         self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # File logging format
+        # File logging format - simplified
         if self.json_format:
             # Use serialize=True instead of custom formatter for JSON
             log_format = "{message}"
             file_serialize = True
         else:
-            log_format = self.custom_format or "{time:YYYY-MM-DD HH:mm:ss} | {level:<5} | {function}:{line} - {message}"
+            # Simplified format for file output
+            log_format = self.custom_format or (
+                "{time:YYYY-MM-DD HH:mm:ss} | "
+                "{level:<5} | "
+                "{function}:{line} | "
+                "{message}"
+            )
             file_serialize = False
 
         # Add file handler
@@ -341,8 +341,8 @@ class LogConfigs:
     def development():
         """Development configuration with verbose logging."""
         return LoggerManager(
-            log_name="app_dev",
-            log_file_path="logs/dev.log",
+            log_name="afm_data_viewer_dev",
+            log_file_path="logs/afm_data_viewer_dev.log",
             level="DEBUG",
             console_level="INFO",  # Less verbose console output
             retention="3 days",
@@ -355,8 +355,8 @@ class LogConfigs:
     def production():
         """Production configuration with JSON formatting for files."""
         return LoggerManager(
-            log_name="app_prod",
-            log_file_path="logs/prod.log",
+            log_name="afm_data_viewer_prod",
+            log_file_path="logs/afm_data_viewer_prod.log",
             level="INFO",
             console_level="WARNING",  # Only warnings and errors to console
             retention="30 days",
@@ -371,8 +371,8 @@ class LogConfigs:
     def testing():
         """Testing configuration with full debug info."""
         return LoggerManager(
-            log_name="app_test",
-            log_file_path="logs/test.log",
+            log_name="afm_data_viewer_test",
+            log_file_path="logs/afm_data_viewer_test.log",
             level="DEBUG",
             console_level="DEBUG",
             retention="1 day",
@@ -384,7 +384,8 @@ class LogConfigs:
     def minimal():
         """Minimal configuration for scripts and small apps."""
         return LoggerManager(
-            log_file_path="app.log",
+            log_name="afm_data_viewer_minimal",
+            log_file_path="logs/afm_data_viewer.log",
             level="INFO",
             retention="7 days",
             rotation="10 MB",
